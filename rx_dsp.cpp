@@ -120,15 +120,80 @@ critical_section_t usb_volumute;
 static int16_t usb_volume=180;  // usb volume
 static bool usb_mute = false;     // usb mute control
 
+static int32_t __not_in_flash_func(fixsqrt)(int32_t v)
+{
+  uint32_t t, q, b, r;
+  r = (int32_t)v;
+  q = 0;
+  b = 0x40000000UL;
+  if (r < 0x40000200)
+  {
+    while (b != 0x40)
+    {
+      t = q + b;
+      if (r >= t)
+      {
+        r -= t;
+        q = t + b; // equivalent to q += 2*b
+      }
+      r <<= 1;
+      b >>= 1;
+    }
+    q >>= 8;
+    return q;
+  }
+  while (b > 0x40)
+  {
+    t = q + b;
+    if (r >= t)
+    {
+      r -= t;
+      q = t + b; // equivalent to q += 2*b
+    }
+    if ((r & 0x80000000) != 0)
+    {
+      q >>= 1;
+      b >>= 1;
+      r >>= 1;
+      while (b > 0x20)
+      {
+        t = q + b;
+        if (r >= t)
+        {
+          r -= t;
+          q = t + b;
+        }
+        r <<= 1;
+        b >>= 1;
+      }
+      q >>= 7;
+      return q;
+    }
+    r <<= 1;
+    b >>= 1;
+  }
+  q >>= 8;
+  return q;
+}
+
 uint16_t __not_in_flash_func(rx_dsp :: process_block)(uint16_t samples[], int16_t audio_samples[])
 {
-
   uint16_t audio_index = 0;
   uint16_t decimated_index = 0;
   int32_t magnitude_sum = 0;
   int32_t sample_accumulator = 0;
   static int16_t prev_audio = 0;
   static int16_t usb_lev_err = 0;
+
+  static uint16_t iq_imb_index = 0;
+  static int32_t iq_imb_theta1 = 0;
+  static int32_t iq_imb_theta2 = 0;
+  static int32_t iq_imb_theta3 = 0;
+  static int32_t iq_imb_theta1_prev = 0;
+  static int32_t iq_imb_theta2_prev = 0;
+  static int32_t iq_imb_theta3_prev = 0;
+  static int32_t iq_imb_c1 = 0;
+  static int32_t iq_imb_c2 = 32767;
 
   int16_t real[adc_block_size/cic_decimation_rate];
   int16_t imag[adc_block_size/cic_decimation_rate];
@@ -167,12 +232,70 @@ uint16_t __not_in_flash_func(rx_dsp :: process_block)(uint16_t samples[], int16_
         prev_q_in = input_q;
         prev_i_out = i;
         prev_q_out = q;
-        #endif 
+        #endif
+
+        if (iq_correction)
+        {
+          if (i != 0)
+          {
+            iq_imb_theta1 += ((i < 0) ? -q : q);
+            iq_imb_theta2 += ((i < 0) ? -i : i);
+          }
+          if (q != 0)
+          {
+            iq_imb_theta3 += ((q < 0) ? -q : q);
+          }
+
+          if (++iq_imb_index == 128)
+          {
+            // TODO this low-pass filternig here might not be needed
+            // as we're taking quite a large block of samples
+            iq_imb_theta1 = ((-98 * iq_imb_theta1) >> 15) + ((32669 * iq_imb_theta1_prev) >> 15);
+            iq_imb_theta2 = ((98 * iq_imb_theta2) >> 15) + ((32669 * iq_imb_theta2_prev) >> 15);
+            iq_imb_theta3 = ((98 * iq_imb_theta3) >> 15) + ((32669 * iq_imb_theta3_prev) >> 15);
+
+            iq_imb_theta1_prev = iq_imb_theta1;
+            iq_imb_theta2_prev = iq_imb_theta2;
+            iq_imb_theta3_prev = iq_imb_theta3;
+
+            if (iq_imb_theta2 != 0)
+            {
+              iq_imb_c1 = (iq_imb_theta1 << 15) / iq_imb_theta2;
+            }
+            else
+            {
+              iq_imb_c1 = 0;
+            }
+
+            iq_imb_theta1 = (iq_imb_theta1 * iq_imb_theta1) >> 15;
+            int32_t tmp = (iq_imb_theta2 * iq_imb_theta2) >> 15;
+            iq_imb_theta3 = (iq_imb_theta3 * iq_imb_theta3) >> 15;
+            if (tmp > 0)
+            {
+              tmp = ((iq_imb_theta3 - iq_imb_theta1) << 15) / tmp;
+            }
+            if (tmp > 0)
+            {
+              iq_imb_c2 = fixsqrt(tmp);
+            }
+            else
+            {
+              iq_imb_c2 = 32767;
+            }
+
+            iq_imb_theta1 = 0;
+            iq_imb_theta2 = 0;
+            iq_imb_theta3 = 0;
+            iq_imb_index = 0;
+          }
+          q += (i * iq_imb_c1) >> 15;
+          i = (i * iq_imb_c2) >> 15;
+        }
 
         //Apply frequency shift (move tuned frequency to DC)
         frequency_shift(i, q);
 
-        #ifdef MEASURE_DC_BIAS 
+#ifdef MEASURE_DC_BIAS 
         static int64_t bias_measurement = 0; 
         static int32_t num_bias_measurements = 0; 
         if(num_bias_measurements == 100000) { 
@@ -516,6 +639,7 @@ rx_dsp :: rx_dsp()
   frequency=0;
   initialise_luts();
   swap_iq = 0;
+  iq_correction = 0;
 
   //initialise semaphore for spectrum
   set_mode(AM, 2);
@@ -628,6 +752,11 @@ void rx_dsp :: set_mode(uint8_t val, uint8_t bw)
 void rx_dsp :: set_swap_iq(uint8_t val)
 {
   swap_iq = val;
+}
+
+void rx_dsp :: set_iq_correction(uint8_t val)
+{
+  iq_correction = val;
 }
 
 void rx_dsp :: set_cw_sidetone_Hz(uint16_t val)
