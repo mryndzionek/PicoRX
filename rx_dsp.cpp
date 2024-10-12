@@ -186,9 +186,9 @@ uint16_t __not_in_flash_func(rx_dsp :: process_block)(uint16_t samples[], int16_
   static int16_t usb_lev_err = 0;
 
   static uint16_t iq_imb_index = 0;
-  static int32_t iq_imb_theta1 = 0;
-  static int32_t iq_imb_theta2 = 0;
-  static int32_t iq_imb_theta3 = 0;
+  static int64_t iq_imb_theta1 = 0;
+  static int64_t iq_imb_theta2 = 0;
+  static int64_t iq_imb_theta3 = 0;
   static int32_t iq_imb_theta1_prev = 0;
   static int32_t iq_imb_theta2_prev = 0;
   static int32_t iq_imb_theta3_prev = 0;
@@ -276,7 +276,7 @@ uint16_t __not_in_flash_func(rx_dsp :: process_block)(uint16_t samples[], int16_
             }
             if (tmp > 0)
             {
-              iq_imb_c2 = fixsqrt(tmp);
+              iq_imb_c2 = fixsqrt(2 * tmp) / 2;
             }
             else
             {
@@ -288,8 +288,8 @@ uint16_t __not_in_flash_func(rx_dsp :: process_block)(uint16_t samples[], int16_
             iq_imb_theta3 = 0;
             iq_imb_index = 0;
           }
-          q += (i * iq_imb_c1) >> 15;
-          i = (i * iq_imb_c2) >> 15;
+          q += ((int32_t)i * iq_imb_c1) >> 15;
+          i = ((int32_t)i * iq_imb_c2) >> 15;
         }
 
         //Apply frequency shift (move tuned frequency to DC)
