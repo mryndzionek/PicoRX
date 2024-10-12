@@ -193,7 +193,7 @@ uint16_t __not_in_flash_func(rx_dsp :: process_block)(uint16_t samples[], int16_
   static int32_t iq_imb_theta2_prev = 0;
   static int32_t iq_imb_theta3_prev = 0;
   static int32_t iq_imb_c1 = 0;
-  static int32_t iq_imb_c2 = 0;
+  static int32_t iq_imb_c2 = 32767;
 
   int16_t real[adc_block_size/cic_decimation_rate];
   int16_t imag[adc_block_size/cic_decimation_rate];
@@ -234,54 +234,57 @@ uint16_t __not_in_flash_func(rx_dsp :: process_block)(uint16_t samples[], int16_
         prev_q_out = q;
         #endif
 
-        iq_imb_theta1 += ((i < 0) ? -q : q);
-        iq_imb_theta2 += ((i < 0) ? -i : i);
-        iq_imb_theta3 += ((q < 0) ? -q : q);
-
-        if (++iq_imb_index == 4096)
+        if (iq_correction)
         {
-          // TODO this low-pass filternig here might not be needed
-          // as we're taking quite a large block of samples
-          iq_imb_theta1 = ((98 * -iq_imb_theta1) >> 15) + ((32669 * iq_imb_theta1_prev) >> 15);
-          iq_imb_theta2 = ((98 * iq_imb_theta2) >> 15) + ((32669 * iq_imb_theta2_prev) >> 15);
-          iq_imb_theta3 = ((98 * iq_imb_theta3) >> 15) + ((32669 * iq_imb_theta3_prev) >> 15);
+          iq_imb_theta1 += ((i < 0) ? -q : q);
+          iq_imb_theta2 += ((i < 0) ? -i : i);
+          iq_imb_theta3 += ((q < 0) ? -q : q);
 
-          iq_imb_theta1_prev = iq_imb_theta1;
-          iq_imb_theta2_prev = iq_imb_theta2;
-          iq_imb_theta3_prev = iq_imb_theta3;
+          if (++iq_imb_index == 4096)
+          {
+            // TODO this low-pass filternig here might not be needed
+            // as we're taking quite a large block of samples
+            iq_imb_theta1 = ((98 * -iq_imb_theta1) >> 15) + ((32669 * iq_imb_theta1_prev) >> 15);
+            iq_imb_theta2 = ((98 * iq_imb_theta2) >> 15) + ((32669 * iq_imb_theta2_prev) >> 15);
+            iq_imb_theta3 = ((98 * iq_imb_theta3) >> 15) + ((32669 * iq_imb_theta3_prev) >> 15);
 
-          if (iq_imb_theta2 != 0)
-          {
-            iq_imb_c1 = (iq_imb_theta1 << 15) / iq_imb_theta2;
-          }
-          else
-          {
-            iq_imb_c1 = 0;
-          }
+            iq_imb_theta1_prev = iq_imb_theta1;
+            iq_imb_theta2_prev = iq_imb_theta2;
+            iq_imb_theta3_prev = iq_imb_theta3;
 
-          iq_imb_theta1 = (iq_imb_theta1 * iq_imb_theta1) >> 15;
-          int32_t tmp = (iq_imb_theta2 * iq_imb_theta2) >> 15;
-          iq_imb_theta3 = (iq_imb_theta3 * iq_imb_theta3) >> 15;
-          if (tmp > 0)
-          {
-            tmp = ((iq_imb_theta3 - iq_imb_theta1) << 15) / tmp;
-          }
-          if (tmp > 0)
-          {
-            iq_imb_c2 = fixsqrt(tmp);
-          }
-          else
-          {
-            iq_imb_c2 = 32767;
-          }
+            if (iq_imb_theta2 != 0)
+            {
+              iq_imb_c1 = (iq_imb_theta1 << 15) / iq_imb_theta2;
+            }
+            else
+            {
+              iq_imb_c1 = 0;
+            }
 
-          iq_imb_theta1 = 0;
-          iq_imb_theta2 = 0;
-          iq_imb_theta3 = 0;
-          iq_imb_index = 0;
+            iq_imb_theta1 = (iq_imb_theta1 * iq_imb_theta1) >> 15;
+            int32_t tmp = (iq_imb_theta2 * iq_imb_theta2) >> 15;
+            iq_imb_theta3 = (iq_imb_theta3 * iq_imb_theta3) >> 15;
+            if (tmp > 0)
+            {
+              tmp = ((iq_imb_theta3 - iq_imb_theta1) << 15) / tmp;
+            }
+            if (tmp > 0)
+            {
+              iq_imb_c2 = fixsqrt(tmp);
+            }
+            else
+            {
+              iq_imb_c2 = 32767;
+            }
+
+            iq_imb_theta1 = 0;
+            iq_imb_theta2 = 0;
+            iq_imb_theta3 = 0;
+            iq_imb_index = 0;
+          }
+          q += (i * iq_imb_c1) >> 15;
+          i = (i * iq_imb_c2) >> 15;
         }
-        q += (i * iq_imb_c1) >> 15;
-        i = (i * iq_imb_c2) >> 15;
 
         //Apply frequency shift (move tuned frequency to DC)
         frequency_shift(i, q);
@@ -630,6 +633,7 @@ rx_dsp :: rx_dsp()
   frequency=0;
   initialise_luts();
   swap_iq = 0;
+  iq_correction = 0;
 
   //initialise semaphore for spectrum
   set_mode(AM, 2);
@@ -742,6 +746,11 @@ void rx_dsp :: set_mode(uint8_t val, uint8_t bw)
 void rx_dsp :: set_swap_iq(uint8_t val)
 {
   swap_iq = val;
+}
+
+void rx_dsp :: set_iq_correction(uint8_t val)
+{
+  iq_correction = val;
 }
 
 void rx_dsp :: set_cw_sidetone_Hz(uint16_t val)
