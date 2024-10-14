@@ -20,6 +20,7 @@ class rx_dsp
   void set_volume(uint8_t val);
   void set_squelch(uint8_t val);
   void set_swap_iq(uint8_t val);
+  void set_iq_correction(uint8_t val);
   void set_deemphasis(uint8_t deemphasis);
   void set_pwm_max(uint32_t pwm_max);
   void set_auto_notch(bool enable_auto_notch);
@@ -64,6 +65,7 @@ class rx_dsp
 
   //used in frequency shifter
   uint8_t swap_iq;
+  uint8_t iq_correction;
   int32_t offset_frequency_Hz;
   int32_t dither;
   uint32_t phase;
