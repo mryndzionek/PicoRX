@@ -32,7 +32,6 @@ class rx_dsp
 
   private:
   
-  void frequency_shift(int16_t &i, int16_t &q);
   bool decimate(int16_t &i, int16_t &q);
   int16_t demodulate(int16_t i, int16_t q);
   int16_t automatic_gain_control(int16_t audio);
@@ -64,10 +63,6 @@ class rx_dsp
   //used in frequency shifter
   uint8_t swap_iq;
   uint8_t iq_correction;
-  int32_t offset_frequency_Hz;
-  int32_t dither;
-  uint32_t phase;
-  int32_t frequency;
 
   //used to generate cw sidetone
   int16_t cw_i, cw_q;

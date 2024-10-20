@@ -14,13 +14,38 @@
 #include "fft_filter.h"
 #include "fft.h"
 #include "utils.h"
+#include "rx_definitions.h"
+
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 
 #ifndef SIMULATION
 #include "pico/stdlib.h"
 #endif
 
+void rotate_arr(int16_t *const src, int32_t shift, size_t n)
+{
+  if ((shift == 0) || (n == 0))
+  {
+    return;
+  }
+
+  int16_t dst[n];
+  shift %= n;
+  size_t s = shift < 0 ? n + shift : shift;
+
+  for (size_t i = 0; i < n; i++)
+  {
+    dst[s] = src[i];
+    s++;
+    if (s == n)
+    {
+      s = 0;
+    }
+  }
+  memcpy(src, dst, sizeof(int16_t) * n);
+}
 
 #ifndef SIMULATION
 void __not_in_flash_func(fft_filter::filter_block)(int16_t sample_real[], int16_t sample_imag[], s_filter_control &filter_control, int16_t capture_i[], int16_t capture_q[]) {
@@ -36,6 +61,14 @@ void fft_filter::filter_block(int16_t sample_real[], int16_t sample_imag[], s_fi
 
   // forward FFT
   fixed_fft(sample_real, sample_imag, 8);
+
+  if (filter_control.shift_frequency != 0)
+  {
+    // Apply frequency shift (move tuned frequency to DC)
+    int32_t bin_shift = -fft_size * filter_control.shift_frequency / (adc_sample_rate / cic_decimation_rate);
+    rotate_arr(sample_real, bin_shift, fft_size);
+    rotate_arr(sample_imag, bin_shift, fft_size);
+  }
 
   if(filter_control.capture)
   {
@@ -129,7 +162,6 @@ void fft_filter::filter_block(int16_t sample_real[], int16_t sample_imag[], s_fi
       sample_imag[peak_bin-1] = 0;
     }
   }
-
 
   // inverse FFT
   fixed_ifft(sample_real, sample_imag, 7);

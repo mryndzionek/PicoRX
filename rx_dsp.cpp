@@ -227,9 +227,6 @@ uint16_t __not_in_flash_func(rx_dsp :: process_block)(uint16_t samples[], int16_
 
         iq_imbalance_correction(i, q);
 
-        //Apply frequency shift (move tuned frequency to DC)
-        frequency_shift(i, q);
-
         #ifdef MEASURE_DC_BIAS 
         static int64_t bias_measurement = 0; 
         static int32_t num_bias_measurements = 0; 
@@ -316,23 +313,6 @@ uint16_t __not_in_flash_func(rx_dsp :: process_block)(uint16_t samples[], int16_
     signal_amplitude = (magnitude_sum * decimation_rate)/adc_block_size;
 
     return audio_index;
-}
-
-void __not_in_flash_func(rx_dsp :: frequency_shift)(int16_t &i, int16_t &q)
-{
-    //Apply frequency shift (move tuned frequency to DC)         
-    const uint16_t scaled_phase = (phase >> 21);
-    const int16_t rotation_i =  sin_table[(scaled_phase+512u) & 0x7ff]; //32 - 21 = 11MSBs
-    const int16_t rotation_q = -sin_table[scaled_phase];
-
-    phase += frequency;
-    //truncating fractional bits introduces bias, but it is more efficient to remove it after decimation
-    int32_t bias = (1<<14);
-    const int16_t i_shifted = (((int32_t)i * rotation_i) - ((int32_t)q * rotation_q) + bias) >> 15;
-    const int16_t q_shifted = (((int32_t)q * rotation_i) + ((int32_t)i * rotation_q) + bias) >> 15;
-
-    i = i_shifted;
-    q = q_shifted;
 }
 
 bool __not_in_flash_func(rx_dsp :: decimate)(int16_t &i, int16_t &q)
@@ -567,8 +547,6 @@ rx_dsp :: rx_dsp()
 {
 
   //initialise state
-  phase = 0;
-  frequency=0;
   initialise_luts();
   swap_iq = 0;
   iq_correction = 0;
@@ -658,8 +636,7 @@ void rx_dsp :: set_agc_speed(uint8_t agc_setting)
 
 void rx_dsp :: set_frequency_offset_Hz(double offset_frequency)
 {
-  offset_frequency_Hz = offset_frequency;
-  frequency = ((double)(1ull<<32)*offset_frequency)*cic_decimation_rate/(adc_sample_rate);
+  filter_control.shift_frequency = offset_frequency;
 }
 
 

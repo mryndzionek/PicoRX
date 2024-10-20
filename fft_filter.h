@@ -29,6 +29,7 @@ struct s_filter_control
   bool upper_sideband; 
   bool capture;
   bool enable_auto_notch;
+  int32_t shift_frequency;
 };
 
 class fft_filter
