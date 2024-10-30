@@ -64,6 +64,7 @@ if(PICO_BOARD STREQUAL "pico")
       usb_audio_device.c
       bipbuffer.c
       squelch.c
+      denoiser.c
   )
 
   pico_generate_pio_header(picorx ${CMAKE_CURRENT_LIST_DIR}/nco.pio)
@@ -171,6 +172,7 @@ elseif(PICO_BOARD STREQUAL "pico2")
         usb_audio_device.c
         ring_buffer_lib.c
         squelch.c
+        denoiser.c
     )
     pico_generate_pio_header(pico2rx ${CMAKE_CURRENT_LIST_DIR}/nco.pio)
     pico_generate_pio_header(pico2rx ${CMAKE_CURRENT_LIST_DIR}/quadrature_encoder.pio)

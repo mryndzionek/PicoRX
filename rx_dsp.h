@@ -6,6 +6,9 @@
 #include "pico/sem.h"
 #include "fft_filter.h"
 #include "squelch.h"
+#ifndef __riscv
+#include "denoiser.h"
+#endif
 
 class rx_dsp
 {
@@ -107,6 +110,9 @@ class rx_dsp
 
   int32_t usb_buf_level_avg = 0;
 
+#ifndef __riscv
+  denoiser_t denoiser;
+#endif
 };
 
 #endif
