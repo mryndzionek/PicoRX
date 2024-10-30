@@ -281,7 +281,10 @@ uint16_t __not_in_flash_func(rx_dsp :: process_block)(uint16_t samples[], int16_
     }
 
 #ifndef __riscv
-    denoiser_process(&denoiser, tmp_audio_buf, adc_block_size / decimation_rate);
+    if (audio_denoiser)
+    {
+      denoiser_process(&denoiser, tmp_audio_buf, adc_block_size / decimation_rate);
+    }
 #endif
 
     for (uint16_t idx = 0; idx < adc_block_size / decimation_rate; idx++)
@@ -593,6 +596,7 @@ rx_dsp :: rx_dsp()
   initialise_luts();
   swap_iq = 0;
   iq_correction = 0;
+  audio_denoiser = false;
 
   //initialise semaphore for spectrum
   set_mode(AM, 2);
@@ -718,6 +722,11 @@ void rx_dsp :: set_swap_iq(uint8_t val)
 void rx_dsp :: set_iq_correction(uint8_t val)
 {
   iq_correction = val;
+}
+
+void rx_dsp :: set_audio_denoiser(bool val)
+{
+  audio_denoiser = val;
 }
 
 void rx_dsp :: set_cw_sidetone_Hz(uint16_t val)
