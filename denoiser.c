@@ -9,7 +9,7 @@
 #define KFRAME (28423)
 #define ONE_MINUS_KFRAME (4344)
 
-static q31_t noise_frames[NOISE_FRAMES_NUM][DENOISER_FFT_SIZE / 2];
+static q31_t noise_frames[NOISE_FRAMES_NUM][DENOISER_FFT_SIZE / 4];
 static uint8_t noise_frame_idx = 0;
 static uint8_t noise_frame_counter = 0;
 
@@ -209,10 +209,10 @@ static void subtract_noise(q15_t *iq)
     static size_t counter = 0;
     static q31_t max_snr = 0;
     static q31_t min_snr = INT32_MAX;
-    q15_t mag_q15[DENOISER_FFT_SIZE / 2];
-    static q31_t lpfMag[DENOISER_FFT_SIZE / 2];
+    q15_t mag_q15[DENOISER_FFT_SIZE / 4];
+    static q31_t lpfMag[DENOISER_FFT_SIZE / 4];
 
-    arm_cmplx_mag_fast_q15(iq, mag_q15, DENOISER_FFT_SIZE / 2);
+    arm_cmplx_mag_fast_q15(iq, mag_q15, DENOISER_FFT_SIZE / 4);
 
     for (size_t i = 0; i < DENOISER_FFT_SIZE / 4; i++)
     {
@@ -260,8 +260,8 @@ static void subtract_noise(q15_t *iq)
             alpha = 32767;
         }
 
-        const q31_t a = 32767 - ((4 * alpha) / snr);
-        const q31_t b = ((q31_t)(4 * 32767)) / (20 * snr);
+        const q31_t a = 32767 - ((1 * alpha) / snr);
+        const q31_t b = ((q31_t)(4 * 32767)) / (5 * snr);
         const q31_t gain = MAX(a, b);
 
         iq[(2 * i)] = (iq[(2 * i)] * gain) >> 15;
@@ -299,7 +299,7 @@ void denoiser_init(denoiser_t *self)
     arm_hanning_f32(win, DENOISER_FFT_SIZE);
     arm_float_to_q15(win, self->window, DENOISER_FFT_SIZE);
 
-    for (size_t i = 0; i < DENOISER_FFT_SIZE / 2; i++)
+    for (size_t i = 0; i < DENOISER_FFT_SIZE / 4; i++)
     {
         for (size_t j = 0; j < NOISE_FRAMES_NUM; j++)
         {

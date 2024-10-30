@@ -119,7 +119,7 @@ elseif(PICO_BOARD STREQUAL "pico2")
         event.c
         usb_descriptors.c
         usb_audio_device.c
-        ring_buffer_lib.c
+        bipbuffer.c
         squelch.c
     )
     pico_generate_pio_header(pico2rx-riscv ${CMAKE_CURRENT_LIST_DIR}/nco.pio)
@@ -170,7 +170,7 @@ elseif(PICO_BOARD STREQUAL "pico2")
         event.c
         usb_descriptors.c
         usb_audio_device.c
-        ring_buffer_lib.c
+        bipbuffer.c
         squelch.c
         denoiser.c
     )
