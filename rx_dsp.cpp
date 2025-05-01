@@ -11,12 +11,12 @@
 
 static void agc_cc(int16_t *i_out, int16_t *q_out) {
   static int32_t K = 3276;
-  const int32_t M = 327600 * 2;
+  const int32_t M = 13106800;
   const int16_t R = 10 * 327;
-  const int16_t r = 22936;
+  const int16_t r = 16383;
 
-  *i_out = *i_out * (K >> 16);
-  *q_out = *q_out * (K >> 16);
+  *i_out = (*i_out * K) >> 16;
+  *q_out = (*q_out * K) >> 16;
 
   K += (R * (r - rectangular_2_magnitude(*i_out, *q_out))) >> 16;
   if (K > M) {
