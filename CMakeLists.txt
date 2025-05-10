@@ -45,6 +45,22 @@ set(SRCS
     ring_buffer_lib.c
 )
 
+set(LIBS 
+pico_stdlib
+    pico_multicore
+    hardware_clocks
+    hardware_flash
+    hardware_pio
+    hardware_adc
+    hardware_pwm
+    hardware_dma 
+    hardware_i2c
+    hardware_spi
+    tinyusb_device
+    tinyusb_board
+    u8g2
+)
+
 if(BUTTON_ENCODER)
     add_definitions(-DBUTTON_ENCODER)
     list(APPEND SRCS button_encoder.cpp)
@@ -64,19 +80,7 @@ if(PICO_BOARD STREQUAL "pico")
   pico_enable_stdio_usb(picorx 1)
   pico_enable_stdio_uart(picorx 0)
   target_include_directories(picorx PRIVATE ${CMAKE_CURRENT_LIST_DIR})
-  target_link_libraries(picorx PRIVATE pico_stdlib
-                                       pico_multicore
-                                       hardware_clocks
-                                       hardware_flash
-                                       hardware_pio
-                                       hardware_adc
-                                       hardware_pwm
-                                       hardware_dma 
-                                       hardware_i2c
-                                       hardware_spi
-                                       tinyusb_device
-                                       tinyusb_board
-                                       u8g2)
+  target_link_libraries(picorx PRIVATE ${LIBS})
   target_compile_definitions(picorx PUBLIC PICO_XOSC_STARTUP_DELAY_MULTIPLIER=128)
 
   #battery check utility
@@ -103,19 +107,7 @@ elseif(PICO_BOARD STREQUAL "pico2")
     pico_enable_stdio_usb(pico2rx-riscv 1)
     pico_enable_stdio_uart(pico2rx-riscv 0)
     target_include_directories(pico2rx-riscv PRIVATE ${CMAKE_CURRENT_LIST_DIR})
-    target_link_libraries(pico2rx-riscv PRIVATE pico_stdlib
-                                         pico_multicore
-                                         hardware_clocks
-                                         hardware_flash
-                                         hardware_pio
-                                         hardware_adc
-                                         hardware_pwm
-                                         hardware_dma 
-                                         hardware_i2c
-                                         hardware_spi
-                                         tinyusb_device
-                                         tinyusb_board
-                                         u8g2)
+    target_link_libraries(pico2rx-riscv PRIVATE ${LIBS})
     target_compile_definitions(pico2rx-riscv PUBLIC PICO_XOSC_STARTUP_DELAY_MULTIPLIER=128)
 
     #battery check utility
@@ -138,19 +130,7 @@ elseif(PICO_BOARD STREQUAL "pico2")
     pico_enable_stdio_usb(pico2rx 1)
     pico_enable_stdio_uart(pico2rx 0)
     target_include_directories(pico2rx PRIVATE ${CMAKE_CURRENT_LIST_DIR})
-    target_link_libraries(pico2rx PRIVATE pico_stdlib
-                                         pico_multicore
-                                         hardware_clocks
-                                         hardware_flash
-                                         hardware_pio
-                                         hardware_adc
-                                         hardware_pwm
-                                         hardware_dma 
-                                         hardware_i2c
-                                         hardware_spi
-                                         tinyusb_device
-                                         tinyusb_board
-                                         u8g2)
+    target_link_libraries(pico2rx PRIVATE ${LIBS})
     target_compile_definitions(pico2rx PUBLIC PICO_XOSC_STARTUP_DELAY_MULTIPLIER=128)
 
     #battery check utility
