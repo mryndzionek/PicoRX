@@ -11,6 +11,8 @@ SR = 480000 // 32
 FIX_MAX = (1 << 15) - 1  # corresponds to 8
 FIX_ONE = (1 << 12) - 1  # corresponds to 1
 FIX_PI = round(FIX_ONE * np.pi)
+FIX_ERR_SCALE = round(FIX_ONE * math.pi / 8)
+FIX_PHI_SCALE = round(FIX_ONE * 8 / (2 * math.pi))
 
 
 def rectangular_2_phase(i, q):
@@ -110,17 +112,17 @@ class PLLFixed:
 
     def process(self, i, q):
 
-        idx = (self.phi_locked * 5215) >> 12  # x1.27
+        idx = (self.phi_locked * FIX_PHI_SCALE) >> 12
         if idx < 0:
             idx = FIX_MAX + 1 + idx
 
-        out_i = self.sin_table[((idx // 16) + 512) & 0x7FF] >> 3
-        out_q = self.sin_table[(idx // 16) & 0x7FF] >> 3
+        out_i = self.sin_table[((idx // 16) + 512) & 0x7FF]
+        out_q = self.sin_table[(idx // 16) & 0x7FF]
 
-        tmp_i = (i * out_i + q * out_q) >> 12
-        tmp_q = (-i * out_q + q * out_i) >> 12
+        tmp_i = (i * out_i + q * out_q) >> 15
+        tmp_q = (-i * out_q + q * out_i) >> 15
 
-        err = (-rectangular_2_phase(tmp_i, tmp_q) * 1607) >> 12
+        err = (-rectangular_2_phase(tmp_i, tmp_q) * FIX_ERR_SCALE) >> 12
 
         self.freq_locked = self.freq_locked + ((self.beta * err) >> 12)
         self.phi_locked = (
@@ -183,6 +185,8 @@ def fixed_sim(loop_bw, freq_min, freq_max, time, input):
     print(f"#define AMSYNC_PI ({FIX_PI})")
     print(f"#define AMSYNC_ONE ({FIX_ONE})")
     print(f"#define AMSYNC_MAX ({FIX_MAX})")
+    print(f"#define AMSYNC_ERR_SCALE ({FIX_ERR_SCALE})")
+    print(f"#define AMSYNC_PHI_SCALE ({FIX_PHI_SCALE})")
 
     print(pll.alpha, pll.beta, pll.freq_min, pll.freq_max)
 
@@ -214,7 +218,5 @@ if __name__ == "__main__":
     ) * 0.01
     input_a = sig.hilbert(input)
 
-    floating_sim(100, -100, 100, time, input_a)
-    fixed_sim(100, -100, 100, time, input_a)
-
-    print(FIX_PI)
+    floating_sim(100, -3000, 3000, time, input_a)
+    fixed_sim(100, -3000, 3000, time, input_a)

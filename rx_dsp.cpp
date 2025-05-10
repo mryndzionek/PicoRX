@@ -288,11 +288,16 @@ bool __not_in_flash_func(rx_dsp :: decimate)(int16_t &i, int16_t &q)
       return false;
 }
 
-#define AMSYNC_ALPHA (3398)
-#define AMSYNC_BETA (1898)
-#define AMSYNC_F_MIN (-218)
-#define AMSYNC_F_MAX (218)
-#define AMSYNC_FIX_MAX (32767)
+#define AMSYNC_ALPHA (433)
+#define AMSYNC_BETA (24)
+#define AMSYNC_F_MIN (-5146)
+#define AMSYNC_F_MAX (5146)
+#define AMSYNC_PI (12865)
+#define AMSYNC_ONE (4095)
+#define AMSYNC_MAX (32767)
+#define AMSYNC_ERR_SCALE (1608)
+#define AMSYNC_PHI_SCALE (5214)
+
 
 int16_t __not_in_flash_func(rx_dsp :: demodulate)(int16_t i, int16_t q, uint16_t m)
 {
@@ -309,15 +314,10 @@ int16_t __not_in_flash_func(rx_dsp :: demodulate)(int16_t i, int16_t q, uint16_t
     }
     else if(mode == AMSYNC)
     {
-      size_t idx;
+      size_t idx = (phi_locked * AMSYNC_PHI_SCALE) >> 12;
 
-      if (phi_locked < 0)
-      {
-        idx = AMSYNC_FIX_MAX + 1 + phi_locked;
-      }
-      else
-      {
-        idx = phi_locked;
+      if (phi_locked < 0) {
+        idx = AMSYNC_MAX + 1 + idx;
       }
 
       // VCO
@@ -327,11 +327,12 @@ int16_t __not_in_flash_func(rx_dsp :: demodulate)(int16_t i, int16_t q, uint16_t
       // Phase Detector
       const int16_t synced_i = (i * vco_i + q * vco_q) >> 15;
       const int16_t synced_q = (-i * vco_q + q * vco_i) >> 15;
-      int16_t err = -rectangular_2_phase(synced_i, synced_q);
+      int16_t err =
+          (-rectangular_2_phase(synced_i, synced_q) * AMSYNC_ERR_SCALE) >> 12;
 
       // Loop filter
-      freq_locked += (((int32_t)AMSYNC_BETA * err) >> 15);
-      phi_locked += freq_locked + (((int32_t)AMSYNC_ALPHA * err) >> 15);
+      freq_locked += (((int32_t)AMSYNC_BETA * err) >> 12);
+      phi_locked += freq_locked + (((int32_t)AMSYNC_ALPHA * err) >> 12);
 
       // Clamp frequency
       if (freq_locked > AMSYNC_F_MAX)
@@ -345,14 +346,12 @@ int16_t __not_in_flash_func(rx_dsp :: demodulate)(int16_t i, int16_t q, uint16_t
       }
 
       // Wrap phi
-      if (phi_locked > AMSYNC_FIX_MAX)
-      {
-        phi_locked -= AMSYNC_FIX_MAX + 1;
+      if (phi_locked > (2 * AMSYNC_PI)) {
+        phi_locked -= (2 * AMSYNC_PI);
       }
 
-      if (phi_locked < -AMSYNC_FIX_MAX)
-      {
-        phi_locked += AMSYNC_FIX_MAX + 1;
+      if (phi_locked < -(2 * AMSYNC_PI)) {
+        phi_locked += (2 * AMSYNC_PI);
       }
 
       // measure DC using first order IIR low-pass filter
