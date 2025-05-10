@@ -8,8 +8,9 @@ import matplotlib.pyplot as plt
 
 
 SR = 480000 // 32
-FIX_MAX = (1 << 15) - 1  # corresponds to 2*PI
-FIX_ONE = round(FIX_MAX / (2 * math.pi))
+FIX_MAX = (1 << 15) - 1  # corresponds to 8
+FIX_ONE = (1 << 12) - 1  # corresponds to 1
+FIX_PI = round(FIX_ONE * np.pi)
 
 
 def rectangular_2_phase(i, q):
@@ -109,21 +110,21 @@ class PLLFixed:
 
     def process(self, i, q):
 
-        idx = self.phi_locked
+        idx = (self.phi_locked * 5215) >> 12  # x1.27
         if idx < 0:
             idx = FIX_MAX + 1 + idx
 
-        out_i = self.sin_table[((idx // 16) + 512) & 0x7FF]
-        out_q = self.sin_table[(idx // 16) & 0x7FF]
+        out_i = self.sin_table[((idx // 16) + 512) & 0x7FF] >> 3
+        out_q = self.sin_table[(idx // 16) & 0x7FF] >> 3
 
-        tmp_i = (i * out_i + q * out_q) >> 15
-        tmp_q = (-i * out_q + q * out_i) >> 15
+        tmp_i = (i * out_i + q * out_q) >> 12
+        tmp_q = (-i * out_q + q * out_i) >> 12
 
-        err = -rectangular_2_phase(tmp_i, tmp_q)
+        err = (-rectangular_2_phase(tmp_i, tmp_q) * 1607) >> 12
 
-        self.freq_locked = self.freq_locked + ((self.beta * err) >> 15)
+        self.freq_locked = self.freq_locked + ((self.beta * err) >> 12)
         self.phi_locked = (
-            self.phi_locked + self.freq_locked + ((self.alpha * err) >> 15)
+            self.phi_locked + self.freq_locked + ((self.alpha * err) >> 12)
         )
 
         self.freq_locked = (
@@ -135,11 +136,15 @@ class PLLFixed:
         )
 
         self.phi_locked = (
-            self.phi_locked - 32768 if (self.phi_locked > 32768) else self.phi_locked
+            self.phi_locked - (2 * FIX_PI)
+            if (self.phi_locked > (2 * FIX_PI))
+            else self.phi_locked
         )
 
         self.phi_locked = (
-            self.phi_locked + 32768 if (self.phi_locked < -32768) else self.phi_locked
+            self.phi_locked + (2 * FIX_PI)
+            if (self.phi_locked < -(2 * FIX_PI))
+            else self.phi_locked
         )
 
         return -out_q, out_i, err
@@ -175,6 +180,9 @@ def fixed_sim(loop_bw, freq_min, freq_max, time, input):
     print(f"#define AMSYNC_BETA ({pll.beta})")
     print(f"#define AMSYNC_F_MIN ({pll.freq_min})")
     print(f"#define AMSYNC_F_MAX ({pll.freq_max})")
+    print(f"#define AMSYNC_PI ({FIX_PI})")
+    print(f"#define AMSYNC_ONE ({FIX_ONE})")
+    print(f"#define AMSYNC_MAX ({FIX_MAX})")
 
     print(pll.alpha, pll.beta, pll.freq_min, pll.freq_max)
 
@@ -182,13 +190,13 @@ def fixed_sim(loop_bw, freq_min, freq_max, time, input):
     error = []
     for s in input:
         out_i, out_q, err = pll.process(
-            round(np.real(s) * 32768), round(np.imag(s) * 32768)
+            round(np.real(s) * FIX_ONE), round(np.imag(s) * FIX_ONE)
         )
         output.append(complex(out_i, out_q))
         error.append(err)
 
     output = np.array(output)
-    input1 = np.round(np.real(input_a) * 32768)
+    input1 = np.round(np.real(input_a) * FIX_ONE)
 
     plt.plot(time, input1, label="input real")
     plt.plot(time, np.real(output), label="output real")
@@ -206,5 +214,7 @@ if __name__ == "__main__":
     ) * 0.01
     input_a = sig.hilbert(input)
 
-    floating_sim(1000, -100, 100, time, input_a)
-    fixed_sim(1000, -100, 100, time, input_a)
+    floating_sim(100, -100, 100, time, input_a)
+    fixed_sim(100, -100, 100, time, input_a)
+
+    print(FIX_PI)
