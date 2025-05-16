@@ -12,12 +12,15 @@ SR = 480000 // 32
 BASE_BITS = 15
 BASE_MAX = (1 << BASE_BITS) - 1
 
-FIX_ONE_BITS = 18
+FIX_ONE_BITS = 15
 FIX_MAX = (1 << (FIX_ONE_BITS + 3)) - 1  # times 8 to accommodate 2*pi
 FIX_ONE = (1 << FIX_ONE_BITS) - 1
 FIX_PI = round(FIX_ONE * np.pi)
 FIX_ERR_SCALE = round(FIX_PI / BASE_MAX)
 FIX_PHI_SCALE = round(16 / (((BASE_MAX) / (2 * FIX_PI))))
+
+FILT_BITS = 16
+FILT_ONE = (1 << FILT_BITS) - 1
 
 
 SRC = """
@@ -29,13 +32,15 @@ SRC = """
 #define AMSYNC_A0 (262143)
 #define AMSYNC_A1 (-524286)
 #define AMSYNC_A2 (262143)
-#define AMSYNC_PI (823547)
-#define AMSYNC_ONE (262143)
-#define AMSYNC_MAX (2097151)
-#define AMSYNC_ERR_SCALE (25)
-#define AMSYNC_PHI_SCALE (804)
-#define AMSYNC_FRACTION_BITS (18)
+#define AMSYNC_PI (51469)
+#define AMSYNC_ONE (16383)
+#define AMSYNC_MAX (131071)
+#define AMSYNC_ERR_SCALE (2)
+#define AMSYNC_PHI_SCALE (50)
+#define AMSYNC_FRACTION_BITS (14)
 #define AMSYNC_BASE_FRACTION_BITS (15)
+#define AMSYNC_FILT_BITS (18)
+#define AMSYNC_FILT_ONE (262143)
 
 static int16_t sin_table[2048];
 
@@ -74,13 +79,13 @@ int16_t rectangular_2_phase(int16_t i, int16_t q)
    else return(angle);
 }
 
-void amsync_demod(int16_t *i, int16_t *q, int64_t *err) {
-  static int64_t phi_locked = 0;
-  static int64_t x1 = 0;
-  static int64_t y1 = 0;
-  static int64_t x2 = 0;
-  static int64_t y2 = 0;
-  static int64_t y0_err = 0;
+void amsync_demod(int16_t *i, int16_t *q, int32_t *err) {
+  static int32_t phi_locked = 0;
+  static int32_t x1 = 0;
+  static int32_t y1 = 0;
+  static int32_t x2 = 0;
+  static int32_t y2 = 0;
+  static int32_t y0_err = 0;
 
   size_t idx = (phi_locked / AMSYNC_PHI_SCALE);
 
@@ -98,13 +103,13 @@ void amsync_demod(int16_t *i, int16_t *q, int64_t *err) {
       (-*i * vco_q + *q * vco_i) >> AMSYNC_BASE_FRACTION_BITS;
 
   *err =
-      ((int64_t)rectangular_2_phase(synced_q, synced_i) * AMSYNC_ERR_SCALE);
+      ((int32_t)rectangular_2_phase(synced_q, synced_i) * AMSYNC_ERR_SCALE);
   //*err = (int64_t)(atan2(synced_q, synced_i) * AMSYNC_ONE);
 
   int64_t y0 = *err * AMSYNC_B0 + x1 * AMSYNC_B1 + x2 * AMSYNC_B2;
   y0 += y0_err;
-  y0_err = y0 & AMSYNC_ONE;
-  y0 >>= AMSYNC_FRACTION_BITS;
+  y0_err = y0 & AMSYNC_FILT_ONE;
+  y0 >>= AMSYNC_FILT_BITS;
 #if AMSYNC_NUM_TAPS == 3
   y0 += 2 * y1 - y2;
 #else
@@ -249,8 +254,8 @@ class PLLFixed:
         if len(self.af) < 3:
             self.af += [0] * (3 - len(self.af))
 
-        self.bf = list(map(lambda x: round(x * FIX_ONE), self.bf))
-        self.af = list(map(lambda x: round(x * FIX_ONE), self.af))
+        self.bf = list(map(lambda x: round(x * FILT_ONE), self.bf))
+        self.af = list(map(lambda x: round(x * FILT_ONE), self.af))
 
         self.phi_locked = 0
         self.y1 = 0
@@ -277,13 +282,13 @@ class PLLFixed:
         tmp_i = (i * out_i + q * out_q) >> BASE_BITS
         tmp_q = (-i * out_q + q * out_i) >> BASE_BITS
 
-        err = np.int64((rectangular_2_phase(tmp_q, tmp_i) * FIX_ERR_SCALE))
+        err = np.int32((rectangular_2_phase(tmp_q, tmp_i) * FIX_ERR_SCALE))
         # err = np.int64(round(FIX_ONE * np.angle(tmp_i + 1j * tmp_q)))
 
-        y0 = err * self.bf[0] + self.x1 * self.bf[1] + self.x2 * self.bf[2]
+        y0 = np.int64(err * self.bf[0] + self.x1 * self.bf[1] + self.x2 * self.bf[2])
         y0 += self.y0_err
-        self.y0_err = y0 & FIX_ONE
-        y0 >>= FIX_ONE_BITS
+        self.y0_err = y0 & FILT_ONE
+        y0 >>= FILT_BITS
         if self.num_taps == 3:
             y0 += 2 * self.y1 - self.y2
         else:
@@ -347,6 +352,8 @@ def fixed_sim(loop_bw, time, input):
     print(f"#define AMSYNC_PHI_SCALE ({FIX_PHI_SCALE})")
     print(f"#define AMSYNC_FRACTION_BITS ({FIX_ONE_BITS})")
     print(f"#define AMSYNC_BASE_FRACTION_BITS ({BASE_BITS})")
+    print(f"#define AMSYNC_FILT_BITS ({FILT_BITS})")
+    print(f"#define AMSYNC_FILT_ONE ({FILT_ONE})")
 
     output = []
     error = []
@@ -377,14 +384,14 @@ def c_fixed_sim(time, input):
         source_extension=".c",
     )
 
-    ffi.cdef(f"void amsync_demod(int16_t *i, int16_t *q, int64_t *err);")
+    ffi.cdef(f"void amsync_demod(int16_t *i, int16_t *q, int32_t *err);")
     ffi.cdef("void initialise_luts(void);")
     ffi.compile()
     from _pll import lib as pll
 
     i = ffi.new("int16_t*")
     q = ffi.new("int16_t*")
-    err = ffi.new("int64_t*")
+    err = ffi.new("int32_t*")
     pll.initialise_luts()
 
     output = []
@@ -418,10 +425,10 @@ if __name__ == "__main__":
     phase -= (time > (end / 2)) * 1
     phase += (time > (3 * end / 4)) * 1
     input_a = 0.3 * np.exp(1j * phase)
-    input_a += (
-        np.random.random(len(time)) * 0.01 + 1j * np.random.random(len(time)) * 0.01
-    )
+    # input_a += (
+    #     np.random.random(len(time)) * 0.01 + 1j * np.random.random(len(time)) * 0.01
+    # )
 
-    floating_sim(50, time, input_a)
-    fixed_sim(50, time, input_a)
+    floating_sim(100, time, input_a)
+    fixed_sim(100, time, input_a)
     c_fixed_sim(time, input_a)
