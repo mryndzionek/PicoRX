@@ -26,21 +26,21 @@ FILT_ONE = (1 << FILT_BITS) - 1
 SRC = """
 // PLL loop bandwidth: 50Hz
 #define AMSYNC_NUM_TAPS (3)
-#define AMSYNC_B0 (13241)
-#define AMSYNC_B1 (-26352)
-#define AMSYNC_B2 (13114)
-#define AMSYNC_A0 (262143)
-#define AMSYNC_A1 (-524286)
-#define AMSYNC_A2 (262143)
-#define AMSYNC_PI (51469)
-#define AMSYNC_ONE (16383)
-#define AMSYNC_MAX (131071)
-#define AMSYNC_ERR_SCALE (2)
-#define AMSYNC_PHI_SCALE (50)
-#define AMSYNC_FRACTION_BITS (14)
+#define AMSYNC_B0 (3884)
+#define AMSYNC_B1 (-7686)
+#define AMSYNC_B2 (3803)
+#define AMSYNC_A0 (65535)
+#define AMSYNC_A1 (-131070)
+#define AMSYNC_A2 (65535)
+#define AMSYNC_PI (102941)
+#define AMSYNC_ONE (32767)
+#define AMSYNC_MAX (262143)
+#define AMSYNC_ERR_SCALE (3)
+#define AMSYNC_PHI_SCALE (101)
+#define AMSYNC_FRACTION_BITS (15)
 #define AMSYNC_BASE_FRACTION_BITS (15)
-#define AMSYNC_FILT_BITS (18)
-#define AMSYNC_FILT_ONE (262143)
+#define AMSYNC_FILT_BITS (16)
+#define AMSYNC_FILT_ONE (65535)
 
 static int16_t sin_table[2048];
 
@@ -77,6 +77,11 @@ int16_t rectangular_2_phase(int16_t i, int16_t q)
    //angle lies in range -32768 to 32767
    if (i < 0) return(-angle);     // negate if in quad III or IV
    else return(angle);
+}
+
+inline int32_t wrap(int32_t x) {
+  const int32_t out = (((int64_t)x + (2 * AMSYNC_PI)) % (4 * AMSYNC_PI)) - (2 * AMSYNC_PI);
+  return out;
 }
 
 void amsync_demod(int16_t *i, int16_t *q, int32_t *err) {
@@ -121,15 +126,7 @@ void amsync_demod(int16_t *i, int16_t *q, int32_t *err) {
   x1 = *err;
   phi_locked += y0;
 
-  if(phi_locked > (2 * AMSYNC_PI))
-  {
-    phi_locked -= 2 * AMSYNC_PI;
-  }
-
-  if(phi_locked < (-2 * AMSYNC_PI))
-  {
-    phi_locked += 2 * AMSYNC_PI;
-  }
+  phi_locked = wrap(phi_locked);
 
   *i = vco_i;
   *q = vco_q;
@@ -178,8 +175,9 @@ def pll_3rd_order_des(loop_bw):
     wa = (2 * SR) * math.tan(2 * math.pi * loop_bw / (2 * SR))
     wn = wa / SR
     wn = 2 * math.pi * (loop_bw / SR)
-    b = 1.1
-    c = 2.4
+    # b = 1 + math.sqrt(2)  # damping 0.707, silver ratio
+    b = 2.8
+    c = b
 
     bf = (
         b * wn**2 / 2 + c * wn + wn**3 / 4,
@@ -429,6 +427,6 @@ if __name__ == "__main__":
     #     np.random.random(len(time)) * 0.01 + 1j * np.random.random(len(time)) * 0.01
     # )
 
-    floating_sim(100, time, input_a)
-    fixed_sim(100, time, input_a)
+    floating_sim(50, time, input_a)
+    fixed_sim(50, time, input_a)
     c_fixed_sim(time, input_a)

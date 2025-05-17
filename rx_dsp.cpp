@@ -288,11 +288,11 @@ bool __not_in_flash_func(rx_dsp :: decimate)(int16_t &i, int16_t &q)
       return false;
 }
 
-// PLL loop bandwidth: 100Hz
+// PLL loop bandwidth: 50Hz
 #define AMSYNC_NUM_TAPS (3)
-#define AMSYNC_B0 (6653)
-#define AMSYNC_B1 (-13174)
-#define AMSYNC_B2 (6526)
+#define AMSYNC_B0 (3884)
+#define AMSYNC_B1 (-7686)
+#define AMSYNC_B2 (3803)
 #define AMSYNC_A0 (65535)
 #define AMSYNC_A1 (-131070)
 #define AMSYNC_A2 (65535)
@@ -306,6 +306,11 @@ bool __not_in_flash_func(rx_dsp :: decimate)(int16_t &i, int16_t &q)
 #define AMSYNC_FILT_BITS (16)
 #define AMSYNC_FILT_ONE (65535)
 
+inline int32_t wrap(int32_t x) {
+  const int32_t out = (((int64_t)x + (2 * AMSYNC_PI)) % (4 * AMSYNC_PI)) - (2 * AMSYNC_PI);
+  return out;
+}
+
 int16_t __not_in_flash_func(rx_dsp :: demodulate)(int16_t i, int16_t q)
 {
    static int32_t phi_locked = 0;
@@ -317,11 +322,12 @@ int16_t __not_in_flash_func(rx_dsp :: demodulate)(int16_t i, int16_t q)
 
     if(mode == AM)
     {
-        int16_t amplitude = rectangular_2_magnitude(i, q);
-        //measure DC using first order IIR low-pass filter
-        audio_dc = amplitude+(audio_dc - (audio_dc >> 5));
-        //subtract DC component
-        return amplitude - (audio_dc >> 5);
+      phi_locked = 0;
+      int16_t amplitude = rectangular_2_magnitude(i, q);
+      // measure DC using first order IIR low-pass filter
+      audio_dc = amplitude + (audio_dc - (audio_dc >> 5));
+      // subtract DC component
+      return amplitude - (audio_dc >> 5);
     }
     else if(mode == AMSYNC)
     {
@@ -343,8 +349,13 @@ int16_t __not_in_flash_func(rx_dsp :: demodulate)(int16_t i, int16_t q)
           ((int32_t)rectangular_2_phase(synced_q, synced_i) * AMSYNC_ERR_SCALE);
 
       int64_t y0 = (int64_t)phi_err * AMSYNC_B0 + x1 * AMSYNC_B1 + x2 * AMSYNC_B2;
-      y0 += y0_err;
-      y0_err = y0 & AMSYNC_FILT_ONE;
+      // if (count++ == 15000) {
+      //   count = 0;
+      //   y0_err = 0;
+      // } else {
+        y0 += y0_err;
+        y0_err = y0 & AMSYNC_FILT_ONE;
+      // }
       y0 >>= AMSYNC_FILT_BITS;
 #if AMSYNC_NUM_TAPS == 3
       y0 += 2 * y1 - y2;
@@ -357,13 +368,7 @@ int16_t __not_in_flash_func(rx_dsp :: demodulate)(int16_t i, int16_t q)
       x1 = phi_err;
       phi_locked += y0;
 
-      if (phi_locked > (2 * AMSYNC_PI)) {
-        phi_locked -= 2 * AMSYNC_PI;
-      }
-
-      if (phi_locked < (-2 * AMSYNC_PI)) {
-        phi_locked += 2 * AMSYNC_PI;
-      }
+      phi_locked = wrap(phi_locked);
 
       // measure DC using first order IIR low-pass filter
       audio_dc = synced_i + (audio_dc - (audio_dc >> 5));
