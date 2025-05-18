@@ -19,19 +19,19 @@ FIX_PI = round(FIX_ONE * np.pi)
 FIX_ERR_SCALE = round(FIX_PI / BASE_MAX)
 FIX_PHI_SCALE = round(16 / (((BASE_MAX) / (2 * FIX_PI))))
 
-FILT_BITS = 16
+FILT_BITS = 15
 FILT_ONE = (1 << FILT_BITS) - 1
 
 
 SRC = """
-// PLL loop bandwidth: 50Hz
+// PLL loop bandwidth: 20Hz
 #define AMSYNC_NUM_TAPS (3)
-#define AMSYNC_B0 (3884)
-#define AMSYNC_B1 (-7686)
-#define AMSYNC_B2 (3803)
-#define AMSYNC_A0 (65535)
-#define AMSYNC_A1 (-131070)
-#define AMSYNC_A2 (65535)
+#define AMSYNC_B0 (772)
+#define AMSYNC_B1 (-1537)
+#define AMSYNC_B2 (765)
+#define AMSYNC_A0 (32767)
+#define AMSYNC_A1 (-65534)
+#define AMSYNC_A2 (32767)
 #define AMSYNC_PI (102941)
 #define AMSYNC_ONE (32767)
 #define AMSYNC_MAX (262143)
@@ -39,8 +39,8 @@ SRC = """
 #define AMSYNC_PHI_SCALE (101)
 #define AMSYNC_FRACTION_BITS (15)
 #define AMSYNC_BASE_FRACTION_BITS (15)
-#define AMSYNC_FILT_BITS (16)
-#define AMSYNC_FILT_ONE (65535)
+#define AMSYNC_FILT_BITS (15)
+#define AMSYNC_FILT_ONE (32767)
 
 static int16_t sin_table[2048];
 
@@ -79,11 +79,6 @@ int16_t rectangular_2_phase(int16_t i, int16_t q)
    else return(angle);
 }
 
-inline int32_t wrap(int32_t x) {
-  const int32_t out = (((int64_t)x + (2 * AMSYNC_PI)) % (4 * AMSYNC_PI)) - (2 * AMSYNC_PI);
-  return out;
-}
-
 void amsync_demod(int16_t *i, int16_t *q, int32_t *err) {
   static int32_t phi_locked = 0;
   static int32_t x1 = 0;
@@ -115,18 +110,21 @@ void amsync_demod(int16_t *i, int16_t *q, int32_t *err) {
   y0 += y0_err;
   y0_err = y0 & AMSYNC_FILT_ONE;
   y0 >>= AMSYNC_FILT_BITS;
-#if AMSYNC_NUM_TAPS == 3
   y0 += 2 * y1 - y2;
-#else
-  y0 += y1;
-#endif
   y2 = y1;
   y1 = y0;
   x2 = x1;
   x1 = *err;
   phi_locked += y0;
 
-  phi_locked = wrap(phi_locked);
+  if(phi_locked > AMSYNC_PI)
+  {
+  phi_locked -= 2 * AMSYNC_PI;
+  }
+  if(phi_locked < AMSYNC_PI)
+  {
+  phi_locked += 2 * AMSYNC_PI;
+  }
 
   *i = vco_i;
   *q = vco_q;
@@ -327,7 +325,7 @@ def floating_sim(loop_bw, time, input):
 
     plt.plot(time, input1, label="input real")
     plt.plot(time, np.real(output), label="output real")
-    plt.plot(time, error, label="phase error")
+    # plt.plot(time, error, label="phase error")
 
     plt.grid(True)
     plt.legend()
@@ -367,7 +365,7 @@ def fixed_sim(loop_bw, time, input):
 
     plt.plot(time, input1, label="input real")
     plt.plot(time, np.real(output), label="output real")
-    plt.plot(time, error, label="phase error")
+    # plt.plot(time, error, label="phase error")
 
     plt.grid(True)
     plt.legend()
@@ -406,7 +404,7 @@ def c_fixed_sim(time, input):
 
     plt.plot(time, input1, label="input real")
     plt.plot(time, np.real(output), label="output real")
-    plt.plot(time, error, label="phase error")
+    # plt.plot(time, error, label="phase error")
 
     plt.grid(True)
     plt.legend()
@@ -422,11 +420,11 @@ if __name__ == "__main__":
     phase += (time > (end / 4)) * 1
     phase -= (time > (end / 2)) * 1
     phase += (time > (3 * end / 4)) * 1
-    input_a = 0.3 * np.exp(1j * phase)
-    # input_a += (
-    #     np.random.random(len(time)) * 0.01 + 1j * np.random.random(len(time)) * 0.01
-    # )
+    input_a = 0.0025 * np.exp(1j * phase)
+    input_a += (
+        np.random.random(len(time)) * 0.01 - 0.005 + 1j * (np.random.random(len(time)) * 0.01 - 0.005)
+    )
 
-    floating_sim(50, time, input_a)
-    fixed_sim(50, time, input_a)
+    floating_sim(20, time, input_a)
+    fixed_sim(20, time, input_a)
     c_fixed_sim(time, input_a)
