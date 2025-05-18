@@ -22,7 +22,7 @@ static void agc_cc(int16_t *i_out, int16_t *q_out, uint16_t m) {
   *i_out = *i_out * g;
   *q_out = *q_out * g;
 
-  const int16_t tmp = -r + rectangular_2_magnitude(*i_out, *q_out);
+  const int16_t tmp = -r + m;
   const int16_t rate = (tmp > K) ? attack_rate : decay_rate;
 
   K -= (tmp * rate) >> 16;
@@ -282,11 +282,14 @@ uint16_t __not_in_flash_func(rx_dsp :: process_block)(uint16_t samples[], int16_
     const int16_t q = iq[2 * idx + 1];
 
     //Measure amplitude (for signal strength indicator)
-    int32_t amplitude = rectangular_2_magnitude(i, q);
-    magnitude_sum += amplitude;
+    uint16_t mag;
+    int16_t phi;
+
+    rectangular_2_polar(i, q, &mag, &phi);
+    magnitude_sum += mag;
 
     //Demodulate to give audio sample
-    int32_t audio = demodulate(i, q, amplitude);
+    int32_t audio = demodulate(i, q, mag);
 
     //De-emphasis
     audio = apply_deemphasis(audio);
@@ -308,7 +311,7 @@ uint16_t __not_in_flash_func(rx_dsp :: process_block)(uint16_t samples[], int16_
 
     //output raw audio
     audio_samples[idx] = audio;
-    agc_cc(&iq[2 * idx], &iq[2 * idx + 1], amplitude);
+    agc_cc(&iq[2 * idx], &iq[2 * idx + 1], mag);
   }
 
   if (iq_samples) {
@@ -426,7 +429,9 @@ int16_t __not_in_flash_func(rx_dsp :: demodulate)(int16_t i, int16_t q, uint16_t
       // Phase Detector
       const int16_t synced_i = (i * vco_i + q * vco_q) >> 15;
       const int16_t synced_q = (-i * vco_q + q * vco_i) >> 15;
-      int16_t err = -rectangular_2_phase(synced_i, synced_q);
+      uint16_t mag;
+      int16_t err;
+      rectangular_2_polar(synced_i, synced_q, &mag, &err);
 
       // Loop filter
       freq_locked += (((int32_t)AMSYNC_BETA * err) >> 15);
@@ -455,15 +460,18 @@ int16_t __not_in_flash_func(rx_dsp :: demodulate)(int16_t i, int16_t q, uint16_t
       }
 
       // measure DC using first order IIR low-pass filter
-      audio_dc = synced_q + (audio_dc - (audio_dc >> 5));
+      audio_dc = synced_i + (audio_dc - (audio_dc >> 5));
       // subtract DC component
-      return synced_q - (audio_dc >> 5);
+      return synced_i - (audio_dc >> 5);
     }
     else if(mode == FM)
     {
-        int16_t phase = rectangular_2_phase(i, q);
-        int16_t frequency = phase - last_phase;
-        last_phase = phase;
+        uint16_t mag;
+        int16_t phi;
+
+        rectangular_2_polar(i, q, &mag, &phi);
+        int16_t frequency = phi - last_phase;
+        last_phase = phi;
 
         return frequency;
     }
