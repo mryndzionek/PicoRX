@@ -288,6 +288,7 @@ bool __not_in_flash_func(rx_dsp :: decimate)(int16_t &i, int16_t &q)
       return false;
 }
 
+// For the formulas see 'PicoRX/simulations/am_sync_des.py:pll_3rd_order_des'
 // PLL loop bandwidth: 30Hz
 #define AMSYNC_NUM_TAPS (3)
 #define AMSYNC_B0 (1160)

@@ -2,13 +2,11 @@ import math
 import cmath
 
 import numpy as np
-import scipy.signal as sig
-
 import matplotlib.pyplot as plt
 from cffi import FFI
 
 
-SR = 480000 // 32
+SR = 15000
 BASE_BITS = 15
 BASE_MAX = (1 << BASE_BITS) - 1
 
@@ -420,20 +418,23 @@ def c_fixed_sim(time, input):
     plt.legend()
     plt.show()
 
+def get_noise(amp, length):
+    return np.random.random(length) * 2 * amp - amp
 
 if __name__ == "__main__":
     end = 0.8
     time = np.arange(0, end, 1 / SR)
-    # freq = np.linspace(10, 100, len(time))
-    freq = 50 + 10 * np.sin(2 * np.pi * 3 * time)
+    # freq = 80 # constant frequency
+    freq = np.linspace(10, 80, len(time)) # linearly changing frequency
+    # freq = 50 + 10 * np.sin(2 * np.pi * 3 * time) # varying frequency
     phase = 2 * np.pi * freq * time + 10
+    # introduce some phase jumps
     phase += (time > (end / 4)) * 1
     phase -= (time > (end / 2)) * 1
     phase += (time > (3 * end / 4)) * 1
+    # to really see the PLL performance, test with low SNR signal
     input_a = 0.0025 * np.exp(1j * phase)
-    input_a += (
-        np.random.random(len(time)) * 0.01 - 0.005 + 1j * (np.random.random(len(time)) * 0.01 - 0.005)
-    )
+    input_a += get_noise(0.01, len(time)) + 1j * get_noise(0.01, len(time))
 
     floating_sim(30, time, input_a)
     fixed_sim(30, time, input_a)
