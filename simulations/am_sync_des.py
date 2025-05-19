@@ -24,11 +24,11 @@ FILT_ONE = (1 << FILT_BITS) - 1
 
 
 SRC = """
-// PLL loop bandwidth: 20Hz
+// PLL loop bandwidth: 30Hz
 #define AMSYNC_NUM_TAPS (3)
-#define AMSYNC_B0 (772)
-#define AMSYNC_B1 (-1537)
-#define AMSYNC_B2 (765)
+#define AMSYNC_B0 (1160)
+#define AMSYNC_B1 (-2306)
+#define AMSYNC_B2 (1146)
 #define AMSYNC_A0 (32767)
 #define AMSYNC_A1 (-65534)
 #define AMSYNC_A2 (32767)
@@ -106,11 +106,21 @@ void amsync_demod(int16_t *i, int16_t *q, int32_t *err) {
       ((int32_t)rectangular_2_phase(synced_q, synced_i) * AMSYNC_ERR_SCALE);
   //*err = (int64_t)(atan2(synced_q, synced_i) * AMSYNC_ONE);
 
-  int64_t y0 = *err * AMSYNC_B0 + x1 * AMSYNC_B1 + x2 * AMSYNC_B2;
+  int32_t y0 = *err * AMSYNC_B0 + x1 * AMSYNC_B1 + x2 * AMSYNC_B2;
   y0 += y0_err;
   y0_err = y0 & AMSYNC_FILT_ONE;
   y0 >>= AMSYNC_FILT_BITS;
-  y0 += 2 * y1 - y2;
+  int32_t f = 2 * y1 - y2;  // this term corresponds to frequency -pi..pi -> -SR/2..SR/2
+  // limit frequency, just in case
+  if(f > AMSYNC_PI)
+  {
+      f = AMSYNC_PI;
+  }
+  if(f < -AMSYNC_PI)
+  {
+      f = -AMSYNC_PI;
+  }
+  y0 += f;
   y2 = y1;
   y1 = y0;
   x2 = x1;
@@ -119,11 +129,11 @@ void amsync_demod(int16_t *i, int16_t *q, int32_t *err) {
 
   if(phi_locked > AMSYNC_PI)
   {
-  phi_locked -= 2 * AMSYNC_PI;
+      phi_locked -= 2 * AMSYNC_PI;
   }
   if(phi_locked < AMSYNC_PI)
   {
-  phi_locked += 2 * AMSYNC_PI;
+      phi_locked += 2 * AMSYNC_PI;
   }
 
   *i = vco_i;
@@ -425,6 +435,6 @@ if __name__ == "__main__":
         np.random.random(len(time)) * 0.01 - 0.005 + 1j * (np.random.random(len(time)) * 0.01 - 0.005)
     )
 
-    floating_sim(20, time, input_a)
-    fixed_sim(20, time, input_a)
+    floating_sim(30, time, input_a)
+    fixed_sim(30, time, input_a)
     c_fixed_sim(time, input_a)

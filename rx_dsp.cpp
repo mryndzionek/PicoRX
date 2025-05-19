@@ -288,11 +288,11 @@ bool __not_in_flash_func(rx_dsp :: decimate)(int16_t &i, int16_t &q)
       return false;
 }
 
-// PLL loop bandwidth: 20Hz
+// PLL loop bandwidth: 30Hz
 #define AMSYNC_NUM_TAPS (3)
-#define AMSYNC_B0 (772)
-#define AMSYNC_B1 (-1537)
-#define AMSYNC_B2 (765)
+#define AMSYNC_B0 (1160)
+#define AMSYNC_B1 (-2306)
+#define AMSYNC_B2 (1146)
 #define AMSYNC_A0 (32767)
 #define AMSYNC_A1 (-65534)
 #define AMSYNC_A2 (32767)
@@ -305,7 +305,6 @@ bool __not_in_flash_func(rx_dsp :: decimate)(int16_t &i, int16_t &q)
 #define AMSYNC_BASE_FRACTION_BITS (15)
 #define AMSYNC_FILT_BITS (15)
 #define AMSYNC_FILT_ONE (32767)
-
 
 int16_t __not_in_flash_func(rx_dsp :: demodulate)(int16_t i, int16_t q)
 {
@@ -344,11 +343,22 @@ int16_t __not_in_flash_func(rx_dsp :: demodulate)(int16_t i, int16_t q)
       const int32_t phi_err =
           ((int32_t)rectangular_2_phase(synced_q, synced_i) * AMSYNC_ERR_SCALE);
 
-      int64_t y0 = (int64_t)phi_err * AMSYNC_B0 + x1 * AMSYNC_B1 + x2 * AMSYNC_B2;
+      int32_t y0 = phi_err * AMSYNC_B0 + x1 * AMSYNC_B1 + x2 * AMSYNC_B2;
       y0 += y0_err;
       y0_err = y0 & AMSYNC_FILT_ONE;
       y0 >>= AMSYNC_FILT_BITS;
-      y0 += 2 * y1 - y2;
+      int32_t f =
+          2 * y1 -
+          y2;  // this term corresponds to frequency -pi..pi -> -SR/2..SR/2
+      if(f > AMSYNC_PI)
+      {
+        f = AMSYNC_PI;
+      }
+      if(f < -AMSYNC_PI)
+      {
+        f = -AMSYNC_PI;
+      }
+      y0 += f;
       y2 = y1;
       y1 = y0;
       x2 = x1;
