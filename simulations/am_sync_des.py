@@ -249,7 +249,6 @@ class PLLFixed:
     def __init__(self, loop_bw):
 
         self.bf, self.af = pll_3rd_order_des(loop_bw)
-        print(self.bf, self.af)
         self.num_taps = len(self.bf)
 
         if len(self.bf) < 3:
@@ -261,12 +260,12 @@ class PLLFixed:
         self.bf = list(map(lambda x: round(x * FILT_ONE), self.bf))
         self.af = list(map(lambda x: round(x * FILT_ONE), self.af))
 
-        self.phi_locked = 0
-        self.y1 = 0
-        self.x1 = 0
-        self.y2 = 0
-        self.x2 = 0
-        self.y0_err = 0
+        self.phi_locked = np.int32(0)
+        self.y1 = np.int32(0)
+        self.x1 = np.int32(0)
+        self.y2 = np.int32(0)
+        self.x2 = np.int32(0)
+        self.y0_err = np.int32(0)
 
         self.sin_table = []
         for idx in range(2048):
@@ -289,7 +288,7 @@ class PLLFixed:
         err = np.int32((rectangular_2_phase(tmp_q, tmp_i) * FIX_ERR_SCALE))
         # err = np.int64(round(FIX_ONE * np.angle(tmp_i + 1j * tmp_q)))
 
-        y0 = np.int64(err * self.bf[0] + self.x1 * self.bf[1] + self.x2 * self.bf[2])
+        y0 = np.int32(err * self.bf[0] + self.x1 * self.bf[1] + self.x2 * self.bf[2])
         y0 += self.y0_err
         self.y0_err = y0 & FILT_ONE
         y0 >>= FILT_BITS
