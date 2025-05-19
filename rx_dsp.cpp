@@ -389,26 +389,38 @@ bool __not_in_flash_func(rx_dsp :: decimate)(int16_t &i, int16_t &q)
       return false;
 }
 
-// PLL loop bandwidth: 50Hz
-#define AMSYNC_B0 (1956)
-#define AMSYNC_B1 (-1927)
-#define AMSYNC_PI (205884)
-#define AMSYNC_ONE (65535)
-#define AMSYNC_MAX (524287)
-#define AMSYNC_ERR_SCALE (6)
-#define AMSYNC_PHI_SCALE (201)
-#define AMSYNC_FRACTION_BITS (16)
+// For the formulas see 'PicoRX/simulations/am_sync_des.py:pll_3rd_order_des'
+// PLL loop bandwidth: 30Hz
+#define AMSYNC_NUM_TAPS (3)
+#define AMSYNC_B0 (1160)
+#define AMSYNC_B1 (-2306)
+#define AMSYNC_B2 (1146)
+#define AMSYNC_A0 (32767)
+#define AMSYNC_A1 (-65534)
+#define AMSYNC_A2 (32767)
+#define AMSYNC_PI (102941)
+#define AMSYNC_ONE (32767)
+#define AMSYNC_MAX (262143)
+#define AMSYNC_ERR_SCALE (3)
+#define AMSYNC_PHI_SCALE (101)
+#define AMSYNC_FRACTION_BITS (15)
 #define AMSYNC_BASE_FRACTION_BITS (15)
+#define AMSYNC_FILT_BITS (15)
+#define AMSYNC_FILT_ONE (32767)
 
-inline int32_t wrap(int32_t x) {
-  return ((x + AMSYNC_PI) % (2 * AMSYNC_PI)) - AMSYNC_PI;
+static inline int32_t wrap(int32_t x) {
+  int32_t y = ((x + AMSYNC_PI) % (2 * AMSYNC_PI)) - AMSYNC_PI;
+  if (y == -AMSYNC_PI) y = AMSYNC_PI;
+  return y;
 }
 
 int16_t __not_in_flash_func(rx_dsp :: demodulate)(int16_t i, int16_t q, uint16_t mag, int16_t phi)
 {
    static int32_t phi_locked = 0;
    static int32_t x1 = 0;
+   static int32_t x2 = 0;
    static int32_t y1 = 0;
+   static int32_t y2 = 0;
    static int32_t y0_err = 0;
 
     if(mode == AM)
@@ -435,16 +447,22 @@ int16_t __not_in_flash_func(rx_dsp :: demodulate)(int16_t i, int16_t q, uint16_t
       const int16_t synced_i = (i * vco_i + q * vco_q) >> AMSYNC_BASE_FRACTION_BITS;
       const int16_t synced_q = (-i * vco_q + q * vco_i) >> AMSYNC_BASE_FRACTION_BITS;
 
-      rectangular_2_polar(synced_i, synced_q, &mag, &phi);
-      const int32_t err = (int32_t)phi * AMSYNC_ERR_SCALE;
+      int16_t phi;
+      uint16_t mag;
 
-      int32_t y0 = err * AMSYNC_B0 + x1 * AMSYNC_B1;
+      rectangular_2_polar(synced_i, synced_q, &mag, &phi);
+
+      const int32_t phi_err = ((int32_t)phi * AMSYNC_ERR_SCALE);
+
+      int32_t y0 = phi_err * AMSYNC_B0 + x1 * AMSYNC_B1 + x2 * AMSYNC_B2;
       y0 += y0_err;
-      y0_err = y0 & AMSYNC_ONE;
-      y0 >>= AMSYNC_FRACTION_BITS;
-      y0 += y1;
+      y0_err = y0 & AMSYNC_FILT_ONE;
+      y0 >>= AMSYNC_FILT_BITS;
+      y0 += 2 * y1 - y2;
+      y2 = y1;
       y1 = y0;
-      x1 = err;
+      x2 = x1;
+      x1 = phi_err;
       phi_locked += y0;
 
       phi_locked = wrap(phi_locked);
