@@ -761,7 +761,7 @@ void ui::draw_waterfall(uint16_t starty)
 
   for(uint16_t x=0; x<WATERFALL_WIDTH; x++)
   {
-      int16_t y = spectrum[2*x]>>2;//scale from 8 to 6 bits
+      int16_t y = spectrum[4*x]>>2;//scale from 8 to 6 bits
       curr_line[x] = y + tmp_line[x];
       tmp_line[x] = 0;
   }
