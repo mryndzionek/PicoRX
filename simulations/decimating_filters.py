@@ -21,7 +21,7 @@ def plot_cic(length, order, fs):
     #make an equivilent filter kernel by convolving a rectangular kernel
     h = np.ones(length)/length
     response = h
-    for i in range(order-1):
+    for _ in range(order-1):
       response = np.convolve(response, h)
 
     #pad kernel and find magnitude spectrum
@@ -65,11 +65,11 @@ def plot_correction(length, order, fs):
     #make an equivilent filter kernel by convolving a rectangular kernel
     h = np.ones(length)/length
     response = h
-    for i in range(order-1):
+    for _ in range(order-1):
       response = np.convolve(response, h)
 
     #pad kernel and find magnitude spectrum
-    response = np.concatenate([response, np.zeros((256*length)-len(response))])
+    response = np.concatenate([response, np.zeros((512*length)-len(response))])
     response = np.fft.fftshift(1.0/abs(np.fft.fft(response)))
 
     #Fold aliased parts of the signal around Fs/2 

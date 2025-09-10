@@ -27,11 +27,11 @@
 #include "pico/stdlib.h"
 #endif
 
-static int16_t cic_correct(int16_t fft_bin, int16_t fft_offset, int16_t sample)
+int16_t cic_correct(int16_t fft_bin, int16_t fft_offset, int16_t sample)
 {
   int16_t corrected_fft_bin = (fft_bin + fft_offset);
-  if(corrected_fft_bin > 127) corrected_fft_bin -= 256;
-  if(corrected_fft_bin < -128) corrected_fft_bin += 256;
+  if (corrected_fft_bin > ((fft_size / 2) - 1)) corrected_fft_bin -= fft_size;
+  if (corrected_fft_bin < -(fft_size / 2)) corrected_fft_bin += fft_size;
   uint16_t unsigned_fft_bin = abs(corrected_fft_bin); 
   int32_t adjusted_sample = ((int32_t)sample * cic_correction[unsigned_fft_bin]) >> 8;
   return std::max(std::min(adjusted_sample, (int32_t)INT16_MAX), (int32_t)INT16_MIN);
@@ -50,7 +50,7 @@ void fft_filter::filter_block(int16_t sample_real[], int16_t sample_imag[], s_fi
   }
 
   // forward FFT
-  fixed_fft(sample_real, sample_imag, 8);
+  fixed_fft(sample_real, sample_imag, 9);
 
   if(filter_control.capture)
   {
@@ -173,7 +173,7 @@ void fft_filter::filter_block(int16_t sample_real[], int16_t sample_imag[], s_fi
   }
 
   // inverse FFT
-  fixed_ifft(sample_real, sample_imag, 7);
+  fixed_ifft(sample_real, sample_imag, 8);
 
 }
 

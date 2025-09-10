@@ -682,7 +682,7 @@ void rx_dsp :: set_agc_control(uint8_t agc_control, uint8_t agc_gain)
 void rx_dsp :: set_frequency_offset_Hz(double offset_frequency)
 {
   offset_frequency_Hz = offset_frequency;
-  const float bin_width = adc_sample_rate/(cic_decimation_rate*256);
+  const float bin_width = adc_sample_rate / (cic_decimation_rate * fft_size);
   filter_control.fft_bin = offset_frequency/bin_width;
   frequency = ((double)(1ull<<32)*offset_frequency)*cic_decimation_rate/(adc_sample_rate);
 }
@@ -694,11 +694,12 @@ void rx_dsp :: set_mode(uint8_t val, uint8_t bw)
   //                           AM AMS LSB USB NFM CW
   uint8_t start_bins[6]   =  {  0,  0,  3,  3,  0, 0};
 
-  uint8_t stop_bins[5][6] = {{ 19, 19, 16, 16, 31, 0},  //very narrow
-                             { 22, 22, 19, 19, 34, 1},  //narrow
-                             { 25, 25, 22, 22, 37, 2},  //normal
-                             { 31, 31, 25, 25, 40, 3},  //wide
-                             { 63, 63, 28, 28, 43, 4}}; //very wide
+  const uint8_t stop_bins[5][6] = {
+      {2 * 19, 2 * 19, 2 * 16, 2 * 16, 2 * 31, 2 * 0},   // very narrow
+      {2 * 22, 2 * 22, 2 * 19, 2 * 19, 2 * 34, 2 * 1},   // narrow
+      {2 * 25, 2 * 25, 2 * 22, 2 * 22, 2 * 37, 2 * 2},   // normal
+      {2 * 31, 2 * 31, 2 * 25, 2 * 25, 2 * 40, 2 * 3},   // wide
+      {2 * 63, 2 * 63, 2 * 28, 2 * 28, 2 * 43, 2 * 4}};  // very wide
 
   filter_control.lower_sideband = (mode != USB);
   filter_control.upper_sideband = (mode != LSB);
@@ -771,8 +772,8 @@ s_filter_control rx_dsp :: get_filter_config()
 static int16_t cic_correct(int16_t fft_bin, int16_t fft_offset, uint16_t magnitude)
 {
   int16_t corrected_fft_bin = (fft_bin + fft_offset);
-  if(corrected_fft_bin > 127) corrected_fft_bin -= 256;
-  if(corrected_fft_bin < -128) corrected_fft_bin += 256;
+  if (corrected_fft_bin > ((fft_size / 2) - 1)) corrected_fft_bin -= fft_size;
+  if (corrected_fft_bin < -(fft_size / 2)) corrected_fft_bin += fft_size;
   uint16_t unsigned_fft_bin = abs(corrected_fft_bin); 
   uint32_t adjusted_magnitude = ((uint32_t)magnitude * cic_correction[unsigned_fft_bin]) >> 8;
   return std::min(adjusted_magnitude, (uint32_t)UINT16_MAX);
@@ -780,7 +781,7 @@ static int16_t cic_correct(int16_t fft_bin, int16_t fft_offset, uint16_t magnitu
 
 static inline int8_t freq_bin(uint8_t bin)
 {
-  return bin > 127 ? bin - 256 : bin;
+  return bin > 255 ? bin - 512 : bin;
 }
 
 static inline uint8_t fft_shift(uint8_t bin)

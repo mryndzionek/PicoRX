@@ -52,7 +52,7 @@ class rx_dsp
   queue_t data_queue;
 
   //capture samples for spectral analysis
-  int16_t capture[256];
+  int16_t capture[fft_size];
   semaphore_t spectrum_semaphore;
 
   //used in cic decimator

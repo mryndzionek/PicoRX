@@ -6,7 +6,7 @@
 const uint16_t decimation_rate = 32u; //cic decimation
 const uint16_t cic_decimation_rate = decimation_rate/2u;
 
-const uint16_t fft_size = 256;
+const uint16_t fft_size = 512;
 const uint16_t new_fft_size = fft_size / 2;
 
 const uint32_t adc_sample_rate = 480e3;
