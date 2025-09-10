@@ -779,14 +779,14 @@ static int16_t cic_correct(int16_t fft_bin, int16_t fft_offset, uint16_t magnitu
   return std::min(adjusted_magnitude, (uint32_t)UINT16_MAX);
 }
 
-static inline int8_t freq_bin(uint8_t bin)
+static inline int16_t freq_bin(uint16_t bin)
 {
-  return bin > 255 ? bin - 512 : bin;
+  return bin > ((fft_size / 2) - 1) ? bin - fft_size : bin;
 }
 
-static inline uint8_t fft_shift(uint8_t bin)
+static inline uint16_t fft_shift(uint16_t bin)
 {
-  return bin ^ 0x80;
+  return bin ^ 0x100;
 }
 
 void rx_dsp :: get_spectrum(uint8_t spectrum[], uint8_t &dB10, uint8_t zoom)
@@ -800,7 +800,7 @@ void rx_dsp :: get_spectrum(uint8_t spectrum[], uint8_t &dB10, uint8_t zoom)
   uint16_t new_max=0u;
   static uint16_t min=1u;//long term maximum
   uint16_t new_min=65535u;
-  for(uint16_t i=0; i<256; ++i)
+  for(uint16_t i=0; i<fft_size; ++i)
   {
     const uint16_t magnitude = cic_correct(freq_bin(i), capture_filter_control.fft_bin, capture[i]);
     if(magnitude == 0) continue;
@@ -813,8 +813,8 @@ void rx_dsp :: get_spectrum(uint8_t spectrum[], uint8_t &dB10, uint8_t zoom)
   const float logmax = log10f(std::max(max, lowest_max));
 
   //clamp and convert to log scale 0 -> 255
-  uint8_t temp_spectrum[256];
-  for(uint16_t i=0; i<256; ++i)
+  uint8_t temp_spectrum[fft_size];
+  for(uint16_t i=0; i<fft_size; ++i)
   {
     const uint16_t magnitude = cic_correct(freq_bin(i), capture_filter_control.fft_bin, capture[i]);
     if(magnitude == 0)
@@ -828,12 +828,12 @@ void rx_dsp :: get_spectrum(uint8_t spectrum[], uint8_t &dB10, uint8_t zoom)
   }
 
   //zoom
-  for(int16_t i=0; i<256; ++i)
+  for(int16_t i=0; i<fft_size; ++i)
   {
     uint16_t total = 0;
     for(int16_t j=0; j<zoom; j++)
     {
-      int16_t from_idx = ((i+j-zoom/2-128)/zoom)+128;
+      int16_t from_idx = ((i+j-zoom/2-(fft_size / 2))/zoom)+(fft_size / 2);
       total += temp_spectrum[from_idx];
     }
     spectrum[i] = total/zoom;

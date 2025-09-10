@@ -734,7 +734,7 @@ void ui::draw_spectrum(uint16_t startY, uint16_t endY)
 
   for(uint16_t x=0; x<128; x++)
   {
-    y = spectrum[x*2]/scale;
+    y = spectrum[x*4]/scale;
     ssd1306_draw_line(&disp, x, endY-y, x, endY, 1);
   }
 

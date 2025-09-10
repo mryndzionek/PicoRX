@@ -15,7 +15,7 @@
 #define BUTTONS_REFRESH_US (50000UL) // 50ms <=> 20Hz
 #define WATERFALL_REFRESH_US (50000UL) // 50ms <=> 20Hz
 
-uint8_t spectrum[256];
+uint8_t spectrum[fft_size];
 uint8_t dB10=10;
 uint8_t zoom=1;
 static rx_settings settings_to_apply;
