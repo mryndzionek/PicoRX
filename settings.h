@@ -77,6 +77,7 @@ struct s_global_settings
   uint8_t treble;
   uint8_t bass;
   uint8_t aux_view;
+  uint8_t wavelet_threshold;
   bool    usb_stream;
   bool    enable_auto_notch;
   bool    iq_correction;
@@ -147,6 +148,7 @@ const s_settings default_settings = {
   0,  //bass
   0,  //aux_view
   0,  //usb_stream
+  0,  // wavelet_threshold
   0,  //enable_auto_notch
   0,  //iq_correction
   0,  //enable_noise_reduction

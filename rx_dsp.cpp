@@ -4,6 +4,7 @@
 #include "utils.h"
 #include "pico/stdlib.h"
 #include "cic_corrections.h"
+#include "wavelet_denoiser.h"
 
 #include <math.h>
 #include <cstdio>
@@ -250,6 +251,8 @@ uint16_t __not_in_flash_func(rx_dsp :: process_block)(uint16_t samples[], int16_
   fft_filter_inst.process_sample(iq, filter_control, capture);
   if(filter_control.capture) sem_release(&spectrum_semaphore);
 
+  int16_t audio_buf[adc_block_size/decimation_rate];
+
   for(uint16_t idx=0; idx<adc_block_size/decimation_rate; idx++)
   {
     const int16_t i = iq[2 * idx];
@@ -265,25 +268,33 @@ uint16_t __not_in_flash_func(rx_dsp :: process_block)(uint16_t samples[], int16_
     magnitude_sum += magnitude;
 
     //Demodulate to give audio sample
-    int32_t audio = demodulate(i, q, magnitude, phase);
+    audio_buf[idx] = demodulate(i, q, magnitude, phase);
 
-    //De-emphasis
-    audio = apply_deemphasis(audio);
+  }
+
+  if (wavelet_threshold) {
+    wavelet_denoise(audio_buf);
+  }
+
+  for (uint16_t idx = 0; idx < adc_block_size / decimation_rate; idx++) {
+
+    // De-emphasis
+    audio_buf[idx] = apply_deemphasis(audio_buf[idx]);
 
     // Bass
-    audio = apply_bass(audio);
+    audio_buf[idx] = apply_bass(audio_buf[idx]);
 
     // Treble
-    audio = apply_treble(audio);
+    audio_buf[idx] = apply_treble(audio_buf[idx]);
 
-    //Automatic gain control scales signal to use full 16 bit range
-    //e.g. -32767 to 32767
-    audio = automatic_gain_control(audio);
+    // Automatic gain control scales signal to use full 16 bit range
+    // e.g. -32767 to 32767
+    audio_buf[idx] = automatic_gain_control(audio_buf[idx]);
 
-    //squelch
-    audio = squelch(audio, signal_amplitude);
+    // squelch
+    int32_t audio = squelch(audio_buf[idx], signal_amplitude);
 
-    //output raw audio
+    // output raw audio
     audio_samples[idx] = audio;
   }
 
@@ -624,6 +635,13 @@ void rx_dsp ::set_bass(uint8_t bs) {
     bs = 4;
   }
   bass = bs;
+}
+
+void rx_dsp ::set_wavelet_threshold(uint8_t wt) {
+  if (wt > 0) {
+    wavelet_set_threshold(wt - 1);
+  }
+  wavelet_threshold = wt;
 }
 
 void rx_dsp :: set_agc_control(uint8_t agc_control, uint8_t agc_gain)

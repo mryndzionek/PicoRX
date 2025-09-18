@@ -45,6 +45,7 @@ class rx_dsp
   uint32_t get_iq_buffer_level();
   float get_tuning_offset_Hz();
   void amsync_reset(void);
+  void set_wavelet_threshold(uint8_t wt);
 
   private:
   
@@ -137,6 +138,9 @@ class rx_dsp
 
   // synchronous AM demodulator state
   amsync_t amsync;
+
+  // wavelet denoiser threshold
+  uint8_t wavelet_threshold;
 
 };
 

@@ -53,6 +53,7 @@ struct rx_settings
   uint8_t spectrum_smoothing;
   bool enable_external_nco;
   bool stream_raw_iq;
+  uint8_t wavelet_threshold;
 };
 
 struct rx_status

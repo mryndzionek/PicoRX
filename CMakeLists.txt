@@ -51,6 +51,7 @@ set(SRCS
     ring_buffer_lib.c
     codecs/decode_sstv.cpp
     codecs/cordic.cpp
+    wavelet_denoiser.cpp
 )
 
 if(BUTTON_ENCODER)
