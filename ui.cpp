@@ -2239,7 +2239,7 @@ bool ui::main_menu(bool & ok)
       if (menu_entry("Menu",
                      "Frequency#Recall#Store#Volume#Mode#AGC#AGC "
                      "Gain#Bandwidth#Squelch#Squelch\nTimeout#Noise\nReduction#"
-                     "Impulse\nBlanker#Auto "
+                     "Impulse\nBlanker#Audio\nDenoiser#Auto "
                      "Notch#De-\nEmphasis#Bass#Treble#IQ\nCorrection#Spectrum#"
                      "Aux\nDisplay#Band Start#Band Stop#Frequency\nStep#CW "
                      "Tone\nFrequency#USB Stream#HW Config#",
@@ -2297,7 +2297,7 @@ bool ui::main_menu(bool & ok)
             if(changed) apply_settings(false);
             break;
           case 8 :
-            done = enumerate_entry("Squelch", "S0#S1#S2#S3#S4#S5#S6#S7#S8#S9#S9+10dB#S9+20dB#S9+30dB#", settings.global.squelch_threshold, ok, changed);
+            done = enumerate_entry("Squelch", "Adaptive#S0#S1#S2#S3#S4#S5#S6#S7#S8#S9#S9+10dB#S9+20dB#S9+30dB#", settings.global.squelch_threshold, ok, changed);
             if(changed) apply_settings(false);
             break;
           case 9 :
@@ -2312,47 +2312,51 @@ bool ui::main_menu(bool & ok)
             if(changed) apply_settings(false);
             break;
           case 12:
-            done = bit_entry("Auto Notch", "Off#On#", settings.global.enable_auto_notch, ok);
+            done = enumerate_entry("Audio\nDenoiser", "Off#1#2#3#4#5#6#", settings.global.wavelet_threshold, ok, changed);
+            if(changed) apply_settings(false);
             break;
           case 13 :
+            done = bit_entry("Auto Notch", "Off#On#", settings.global.enable_auto_notch, ok);
+            break;
+          case 14 :
             done = enumerate_entry("De-\nemphasis", "Off#50us#75us#", settings.global.deemphasis, ok, changed);
             if(changed) apply_settings(false);
             break;
-          case 14 :
+          case 15 :
             done = enumerate_entry("Bass", "Off#+5dB#+10dB#+15dB#+20dB#", settings.global.bass, ok, changed);
             if(changed) apply_settings(false);
             break;
-          case 15 :
+          case 16 :
             done = enumerate_entry("Treble", "Off#+5dB#+10dB#+15dB#+20dB#", settings.global.treble, ok, changed);
             if(changed) apply_settings(false);
             break;
-          case 16 :
+          case 17 :
             done = bit_entry("IQ\nCorrection", "Off#On#", settings.global.iq_correction, ok);
             break;
-          case 17 :
+          case 18 :
             done = spectrum_menu(ok);
             break;
-          case 18:
+          case 19:
             done = enumerate_entry("Aux\nDisplay", "Waterfall#SSTV#", settings.global.aux_view, ok, changed);
             break;
-          case 19 :
+          case 20 :
             done = frequency_entry("Band Start", settings.channel.min_frequency, ok);
             break;
-          case 20 :
+          case 21 :
             done = frequency_entry("Band Stop", settings.channel.max_frequency, ok);
             break;
-          case 21 :
+          case 22 :
             done = enumerate_entry("Frequency\nStep", "10Hz#50Hz#100Hz#500Hz#1kHz#5kHz#6.25kHz#9kHz#10kHz#12.5kHz#25kHz#50kHz#100kHz#", settings.channel.step, ok, changed);
             settings.channel.frequency -= settings.channel.frequency%step_sizes[settings.channel.step];
             break;
-          case 22 :
+          case 23 :
             done = number_entry("CW Tone\nFrequency", "%iHz", 1, 30, 100, settings.global.cw_sidetone, ok, changed);
             if(changed) apply_settings(false);
             break;
-          case 23 :
+          case 24 :
             done = bit_entry("USB\nStream", "Audio#Raw IQ#", settings.global.usb_stream, ok);
             break;
-          case 24 :
+          case 25 :
             done = configuration_menu(ok);
             break;
         }

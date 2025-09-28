@@ -319,6 +319,9 @@ void rx::apply_settings()
 
       stream_raw_iq = settings_to_apply.stream_raw_iq;
 
+      //apply wavelet denoiser threshold
+      rx_dsp_inst.set_wavelet_threshold(settings_to_apply.wavelet_threshold);
+
       settings_changed = false;
       sem_release(&settings_semaphore);
    }
