@@ -56,6 +56,7 @@ class rx_dsp
   int16_t automatic_gain_control(int16_t audio);
   int16_t apply_deemphasis(int16_t x);
   int16_t squelch(int16_t audio, int32_t amplitude);
+  void update_zcr(int16_t audio);
   int16_t apply_treble(int16_t x);
   int16_t apply_bass(int16_t x);
   void apply_impulse_blanker(int16_t &i, int16_t &q, uint16_t mag);
@@ -131,6 +132,7 @@ class rx_dsp
   int16_t s9_threshold=0;
   uint32_t squelch_time_ms = 0;
   uint32_t squelch_timeout_ms = 0;
+  bool squelch_adaptive = false;
 
   //used in AGC
   uint8_t attack_factor;
@@ -148,6 +150,8 @@ class rx_dsp
 
   // synchronous AM demodulator state
   amsync_t amsync;
+  int32_t zcr = 0;
+  bool va; // voice activity flag
 
 };
 

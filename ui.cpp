@@ -2270,7 +2270,7 @@ bool ui::main_menu(bool & ok)
             if(changed) apply_settings(false);
             break;
           case 8 :
-            done = enumerate_entry("Squelch", "S0#S1#S2#S3#S4#S5#S6#S7#S8#S9#S9+10dB#S9+20dB#S9+30dB#", settings.global.squelch_threshold, ok, changed);
+            done = enumerate_entry("Squelch", "ZCR#S0#S1#S2#S3#S4#S5#S6#S7#S8#S9#S9+10dB#S9+20dB#S9+30dB#", settings.global.squelch_threshold, ok, changed);
             if(changed) apply_settings(false);
             break;
           case 9 :

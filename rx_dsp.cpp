@@ -280,6 +280,8 @@ uint16_t __not_in_flash_func(rx_dsp :: process_block)(uint16_t samples[], int16_
   fft_filter_inst.process_sample(iq, filter_control, capture);
   if(filter_control.capture) sem_release(&spectrum_semaphore);
 
+  uint16_t va_count = 0;
+
   for(uint16_t idx=0; idx<adc_block_size/decimation_rate; idx++)
   {
     int16_t i = iq[2 * idx];
@@ -312,12 +314,24 @@ uint16_t __not_in_flash_func(rx_dsp :: process_block)(uint16_t samples[], int16_
     //Automatic gain control scales signal to use full 16 bit range
     //e.g. -32767 to 32767
     audio = automatic_gain_control(audio);
+    update_zcr(audio);
+
+    if (zcr < 2300) {
+      va_count++;
+    }
 
     //squelch
     audio = squelch(audio, signal_amplitude);
 
     //output raw audio
     audio_samples[idx] = audio;
+  }
+
+  printf("VA: %ld %d\n", zcr, va_count);
+  if (va_count > 32) {
+    va = true;
+  } else {
+    va = false;
   }
 
   if (sem_try_acquire(&audio_semaphore)) {
@@ -513,16 +527,47 @@ int16_t __not_in_flash_func(rx_dsp :: demodulate)(int16_t i, int16_t q, uint16_t
 
 int16_t __not_in_flash_func(rx_dsp::squelch)(int16_t audio, int32_t signal_amplitude)
 {
-    if(signal_amplitude > squelch_threshold)
+  if (squelch_adaptive) {
+    if (va) squelch_time_ms = to_ms_since_boot(get_absolute_time());
+  } else {
+    if (signal_amplitude > squelch_threshold)
       squelch_time_ms = to_ms_since_boot(get_absolute_time());
+  }
     const uint32_t time_since_active = to_ms_since_boot(get_absolute_time())-squelch_time_ms;
 
     if(time_since_active < squelch_timeout_ms)
     {
       return audio;
-    } else {
+    }
+    else
+    {
       return 0;
     }
+}
+
+#define SQ_BUF_SIZE (800)
+
+static inline int_fast8_t sgn(int16_t x) {
+  if (x == 0) {
+    return 0;
+  } else {
+    return x > 0 ? 1 : -1;
+  }
+}
+
+void __not_in_flash_func(rx_dsp::update_zcr)(int16_t audio) {
+  static int16_t xp;
+  static int32_t y;
+
+  const int16_t x0 = (abs(sgn(xp) - sgn(audio))) ? 6000 : 0;
+  y += x0 - y / 1024;
+  xp = audio;
+
+  zcr = y / 128;
+  zcr = (zcr * zcr) >> 15;
+  if (zcr > 32767) {
+    zcr = 32767;
+  }
 }
 
 int16_t __not_in_flash_func(rx_dsp::automatic_gain_control)(int16_t audio_in)
@@ -795,8 +840,13 @@ void rx_dsp :: set_squelch(uint8_t threshold, uint8_t timeout)
   const uint16_t timeouts[] = {
     50, 100, 200, 500, 1000, 2000, 3000, 5000
   };
-  squelch_threshold = thresholds[threshold];
-  squelch_timeout_ms = timeouts[timeout];
+  if (threshold == 0) {
+    squelch_adaptive = true;
+  } else {
+    squelch_adaptive = false;
+    squelch_threshold = thresholds[threshold - 1];
+    squelch_timeout_ms = timeouts[timeout];
+  }
 }
 
 int16_t rx_dsp :: get_signal_strength_dBm()
