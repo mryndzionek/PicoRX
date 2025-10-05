@@ -3,12 +3,14 @@
 
 #include "pico/multicore.h"
 #include "pico/time.h"
+#include "hardware/exception.h"
 #include "hardware/watchdog.h"
 
 #include "rx.h"
 #include "ui.h"
 #include "waterfall.h"
 #include "cat.h"
+#include "m0FaultDispatch.h"
 
 #define UI_REFRESH_HZ (10UL)
 #define UI_REFRESH_US (1000000UL / UI_REFRESH_HZ)
@@ -34,6 +36,9 @@ void core1_main()
 
 int main()
 {
+  extern void __attribute__((used, naked)) HardFault_Handler(void);
+  exception_set_exclusive_handler(HARDFAULT_EXCEPTION, HardFault_Handler);
+
   gpio_set_function(LED, GPIO_FUNC_SIO);
   gpio_set_dir(LED, GPIO_OUT);
   gpio_put(LED, 1);
