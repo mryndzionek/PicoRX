@@ -301,7 +301,7 @@ uint16_t __not_in_flash_func(rx_dsp :: process_block)(uint16_t samples[], int16_
     apply_impulse_blanker(i, q, magnitude);
 
     //Demodulate to give audio sample
-    audio_buf[idx] = demodulate(i, q, magnitude, phase);
+    audio_buf[idx] = demodulate(i, q, magnitude, _phase);
 
   }
 

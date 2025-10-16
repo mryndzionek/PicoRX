@@ -30,7 +30,6 @@ typedef int32_t d_num_t;
 #define ULONG_BITS (sizeof(unsigned long) * CHAR_BIT)
 
 #define FINEST_LEVEL_DETAIL_LEN (23)  // last element of CD_LEN_LUT
-#define MEDIAN_AVG_LEN (FINEST_LEVEL_DETAIL_LEN * 120)
 
 #if 1
 // sym8 wavelet filters
@@ -141,7 +140,7 @@ static void dwt(s_num_t const *const x, uint16_t xn, s_num_t const *const h_lo,
 static void idwt(s_num_t const *const ca, s_num_t const *const cd, uint16_t cn,
                  s_num_t const *const h_lo, s_num_t const *const h_hi,
                  uint16_t hn, s_num_t *x) {
-  s_num_t tmp_x[2 * cn];
+  s_num_t tmp_x[2 * 47];
 
   convolve_inv(ca, cn, &h_lo[0], hn / 2, &x[1]);
   convolve_inv(ca, cn, &h_lo[1], hn / 2, &x[0]);
@@ -157,8 +156,8 @@ static void dwtn(s_num_t *const x, uint16_t xn, s_num_t const *const h_lo,
                  s_num_t const *const h_hi, uint16_t hn, s_num_t *ca,
                  s_num_t *cd) {
   uint16_t idx = 0;
-  s_num_t _ca[xn];
-  s_num_t _cd[xn];
+  static s_num_t _ca[FRAME_LEN + HN];
+  static s_num_t _cd[FRAME_LEN + HN];
 
   for (uint16_t i = 0; i < LEVELS; i++) {
     dwt(x, xn, h_lo, h_hi, hn, _ca, _cd);
@@ -220,29 +219,19 @@ static inline int _cmp(const void *a, const void *b) {
 }
 
 static s_num_t estimate_noise_level(s_num_t x[FINEST_LEVEL_DETAIL_LEN]) {
-  static uint16_t medians[MEDIAN_AVG_LEN];
-  static uint16_t med_idx = 0;
-  static s_num_t sigma = 0;
+  static uint32_t avg = 0;
 
   for (uint16_t i = 0; i < FINEST_LEVEL_DETAIL_LEN; i++) {
-    medians[med_idx++] = abs(x[i]);
+    avg += abs(x[i]) - avg / (2048);
   }
 
-  if (med_idx == MEDIAN_AVG_LEN) {
-    med_idx = 0;
-    qsort(medians, MEDIAN_AVG_LEN, sizeof(medians[0]), _cmp);
-    const d_num_t median =
-        (medians[MEDIAN_AVG_LEN / 2] + medians[(MEDIAN_AVG_LEN / 2) - 1]) / 2;
-    sigma = median + (((d_num_t)median * 15813) >> 15);  // divide by 0.674
-  }
+  const s_num_t sigma = avg / (2048);
   return sigma;
 }
 
 void wavelet_set_threshold(uint8_t thres) {
   if (thres > MAX_THRESHOLD_LEVEL) {
     thres = MAX_THRESHOLD_LEVEL;
-  } else if (thres == 0) {
-    thres = 1;
   }
 
   g_threshold = thres;
@@ -279,8 +268,8 @@ bool wavelet_denoise(int16_t audio[64], bool output_denoised) {
   }
 
   if (output_denoised) {
-    const s_num_t sigma = estimate_noise_level(cd);
-    const d_num_t threshold = (2 * (g_threshold + 1)) * sigma;  // VisuShrink
+    const d_num_t sigma = estimate_noise_level(cd);
+    const d_num_t threshold = ((1 << g_threshold) * sigma) >> 1;  // VisuShrink?
     soft_threshold(cd, threshold, CD_LEN_ALL);  // soft threshold
     idwtn(ca, cd, CD_LEN_LUT[LEVELS - 1], H_LO_INV, H_HI_INV, HN, x);
 
@@ -302,8 +291,6 @@ bool wavelet_denoise(int16_t audio[64], bool output_denoised) {
   }
   const d_num_t y0 = y1 + ((x0 - y1) >> 4);
   y1 = y0;
-
-  printf("%ld\n", y0);
 
   return ((y0 > 2500) ||
           (x0 > 5000));  // TODO adjust this threshold, or make it configurable?
