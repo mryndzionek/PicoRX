@@ -32,6 +32,8 @@
 #define WAIT_10MS sleep_us(10000);
 #define WAIT_100MS sleep_us(100000);
 
+#define AUDIO_BUFFER_LEN (128)
+
 enum e_button_state {idle, slow_mode, fast_mode, very_fast_mode, menu, volume, mode};
 
 // scanner
@@ -113,6 +115,7 @@ class ui
   void renderpage_original(rx_status & status, rx & receiver);
   void renderpage_bigspectrum(bool view_changed, rx_status & status, rx & receiver);
   void renderpage_oscilloscope(rx_status & status, rx & receiver);
+  void renderpage_audiospectrum(rx_status & status, rx & receiver);
   void renderpage_combinedspectrum(bool view_changed, rx_status & status, rx & receiver);
   void renderpage_waterfall(bool view_changed, rx_status & status, rx & receiver);
   void renderpage_status(rx_status & status, rx & receiver);
@@ -171,20 +174,21 @@ class ui
   rx_status &status;
   rx &receiver;
   uint8_t const * const spectrum;
-  uint8_t const * const audio;
+  int16_t const * const audio;
   uint8_t &dB10;
   uint8_t &zoom;
   waterfall &waterfall_inst;
   void apply_settings(bool suspend, bool settings_changed=true);
 
   u8g2_t u8g2;
+  int16_t audio_win[AUDIO_BUFFER_LEN];
 
   public:
 
   s_settings & get_settings(){return settings;};
   void autorestore();
   void do_ui(void);
-  ui(rx_settings & settings_to_apply, rx_status & status, rx &receiver, uint8_t *spectrum, uint8_t *audio, uint8_t &dB10, uint8_t &zoom, waterfall &waterfall_inst);
+  ui(rx_settings & settings_to_apply, rx_status & status, rx &receiver, uint8_t *spectrum, int16_t *audio, uint8_t &dB10, uint8_t &zoom, waterfall &waterfall_inst);
   void update_buttons(void);
 
 };

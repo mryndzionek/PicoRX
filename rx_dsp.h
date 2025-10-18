@@ -40,7 +40,7 @@ class rx_dsp
   void set_spectrum_smoothing(uint8_t spectrum_smoothing);
   int16_t get_signal_strength_dBm();
   void get_spectrum(uint8_t spectrum[], uint8_t &dB10, uint8_t zoom);
-  void get_audio_capture(uint8_t audio[]);
+  void get_audio_capture(int16_t audio[]);
   s_filter_control get_filter_config();
   void get_spectrum(float spectrum[]);
   bool get_raw_data(int16_t &i, int16_t &q);

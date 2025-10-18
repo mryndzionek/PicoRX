@@ -114,7 +114,7 @@ class rx
   static bool audio_running;
   static void dma_handler();
   void process_block(uint16_t adc_samples[], int16_t audio[]);
-  
+
   //store busy time for performance monitoring
   uint32_t busy_time;
 
@@ -139,7 +139,7 @@ class rx
   void run();
   void tune();
   void get_spectrum(uint8_t spectrum[], uint8_t &dB10, uint8_t zoom);
-  void get_audio(uint8_t audio[]);
+  void get_audio(int16_t audio[]);
   void set_alarm_pool(alarm_pool_t *p);
   rx_settings &settings_to_apply;
   rx_status &status;

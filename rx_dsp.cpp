@@ -899,10 +899,9 @@ static uint16_t __time_critical_func(audio_correlate)(int16_t a[128],
   return s_argmax;
 }
 
-void rx_dsp :: get_audio_capture(uint8_t audio[])
+void rx_dsp :: get_audio_capture(int16_t audio[])
 {
   static int16_t prev_audio[128];
-  int16_t audio_tmp[128];
   int16_t audio_in[128];
 
   sem_acquire_blocking(&audio_semaphore);
@@ -912,14 +911,13 @@ void rx_dsp :: get_audio_capture(uint8_t audio[])
   sem_release(&audio_semaphore);
   const uint16_t x = audio_correlate(audio_in, prev_audio);
   for (uint16_t i = 0; i < x; i++) {
-    audio_tmp[i] = prev_audio[127 - x + i];
+    audio[i] = prev_audio[127 - x + i];
   }
-  for (uint16_t i = x; i < (sizeof(audio_tmp) / sizeof(audio_tmp[0])); i++) {
-    audio_tmp[i] = audio_in[i - x];
+  for (uint16_t i = x; i < 128; i++) {
+    audio[i] = audio_in[i - x];
   }
 
-  for (uint16_t i = 0; i < (sizeof(audio_tmp) / sizeof(audio_tmp[0])); i++) {
-    audio[i] = 32 + 6 + (audio_tmp[i] / (32767 / 48));
+  for (uint16_t i = 0; i < 128; i++) {
     prev_audio[i] = audio_in[i];
   }
 }

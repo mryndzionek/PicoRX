@@ -10,6 +10,7 @@
 #include "fonts.h"
 #include "settings.h"
 #include "rotary_encoder.h"
+#include "utils.h"
 
 #include <algorithm>
 
@@ -280,8 +281,8 @@ uint16_t ui::audio_vu_meter_update(void) {
   static uint16_t vu;
   static int16_t avg;
 
-  for (uint8_t i = 0; i < 128; i++) {
-    const int16_t a = (((int16_t)audio[i]) - 38) - (avg / 16);
+  for (uint8_t i = 0; i < AUDIO_BUFFER_LEN; i++) {
+    const int16_t a = ((audio[i]) >> 9) - (avg / 16);
     avg += a - avg / 16;
     vu += abs(a) - vu / 32;
   }
@@ -399,11 +400,13 @@ void ui::renderpage_original(rx_status & status, rx & receiver)
 void ui::renderpage_oscilloscope(rx_status & status, rx & receiver)
 {
   display_clear();
-  for(uint8_t i = 0; i < 127; i++)
-  {
-    u8g2_DrawLine(&u8g2, i, audio[i], i + 1, audio[i + 1]);
-    u8g2_DrawLine(&u8g2, i, audio[i] + 1, i + 1, audio[i + 1] + 1);
-    u8g2_DrawLine(&u8g2, i, audio[i] - 1, i + 1, audio[i + 1] - 1);
+  uint8_t a0 = 32 + 6 + (audio[0] / (32767 / 48));
+  for (uint8_t i = 1; i < AUDIO_BUFFER_LEN; i++) {
+    const uint8_t a1 = 32 + 6 + (audio[i] / (32767 / 48));
+    u8g2_DrawLine(&u8g2, i - 1, a0, i, a1);
+    u8g2_DrawLine(&u8g2, i - 1, a0 + 1, i, a1 + 1);
+    u8g2_DrawLine(&u8g2, i - 1, a0 - 1, i, a1 - 1);
+    a0 = a1;
   }
 
   u8g2_SetDrawColor(&u8g2, 0);
@@ -412,6 +415,51 @@ void ui::renderpage_oscilloscope(rx_status & status, rx & receiver)
   draw_slim_status(0, status, receiver);
   const uint16_t vu = audio_vu_meter_update();
   u8g2_DrawBox(&u8g2, 0, 62, vu, 2);
+  display_show();
+}
+
+static const uint8_t audio_log[256] = {
+    0,  1,  6,  10, 13, 15, 17, 19, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 30,
+    31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 38, 39, 39, 39,
+    40, 40, 40, 41, 41, 41, 42, 42, 42, 42, 43, 43, 43, 44, 44, 44, 44, 44, 45,
+    45, 45, 45, 46, 46, 46, 46, 46, 47, 47, 47, 47, 47, 48, 48, 48, 48, 48, 48,
+    49, 49, 49, 49, 49, 49, 50, 50, 50, 50, 50, 50, 51, 51, 51, 51, 51, 51, 51,
+    52, 52, 52, 52, 52, 52, 52, 52, 53, 53, 53, 53, 53, 53, 53, 53, 54, 54, 54,
+    54, 54, 54, 54, 54, 54, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 56, 56, 56,
+    56, 56, 56, 56, 56, 56, 56, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57,
+    58, 58, 58, 58, 58, 58, 58, 58, 58, 58, 58, 58, 59, 59, 59, 59, 59, 59, 59,
+    59, 59, 59, 59, 59, 59, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60,
+    60, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 62, 62, 62,
+    62, 62, 62, 62, 62, 62, 62, 62, 62, 62, 62, 62, 62, 62, 63, 63, 63, 63, 63,
+    63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64};
+
+void ui::renderpage_audiospectrum(rx_status& status, rx& receiver) {
+  int16_t real[AUDIO_BUFFER_LEN];
+  int16_t img[AUDIO_BUFFER_LEN] = {0};
+
+  for (uint16_t i = 0; i < AUDIO_BUFFER_LEN; i++) {
+    real[i] = (audio_win[i] * audio[i]) >> 15;
+  }
+  fixed_fft(real, img, 7, true);
+  display_clear();
+  uint16_t mag_prev = rectangular_2_magnitude(real[0], img[0]) >> 9;
+  for (uint16_t i = 0; i < (AUDIO_BUFFER_LEN / 2); i++) {
+    uint16_t mag1 = rectangular_2_magnitude(real[i], img[i]) >> 9;
+    if(mag1 > 255)
+    {
+      mag1 = 255;
+    }
+    uint16_t mag0 = (mag_prev + mag1) / 2;
+    if (mag1 > 255) {
+      mag1 = 255;
+    }
+
+    u8g2_DrawLine(&u8g2, 2 * i - 1, 63, 2 * i - 1, 63 - audio_log[mag0]);
+    u8g2_DrawLine(&u8g2, 2 * i, 63, 2 * i, 63 - audio_log[mag1]);
+    mag_prev = mag1;
+  }
+  draw_slim_status(0, status, receiver);
   display_show();
 }
 
@@ -2517,7 +2565,7 @@ void ui::do_ui(void)
     bool update_settings = false;
     enum e_ui_state {splash, idle, menu, recall, sleep, memory_scanner, frequency_scanner};
     static e_ui_state ui_state = splash;
-    const uint8_t num_display_options = 8;
+    const uint8_t num_display_options = 9;
     static bool view_changed = false;
 
     if(ui_state != idle) view_changed = true;
@@ -2616,9 +2664,10 @@ void ui::do_ui(void)
         case 2: renderpage_combinedspectrum(view_changed, status, receiver);break;
         case 3: renderpage_waterfall(view_changed, status, receiver);break;
         case 4: renderpage_oscilloscope(status, receiver);break;
-        case 5: renderpage_status(status, receiver);break;
-        case 6: renderpage_smeter(view_changed, status, receiver); break;
-        case 7: renderpage_fun(view_changed, status, receiver);break;
+        case 5: renderpage_audiospectrum(status, receiver);break;
+        case 6: renderpage_status(status, receiver);break;
+        case 7: renderpage_smeter(view_changed, status, receiver); break;
+        case 8: renderpage_fun(view_changed, status, receiver);break;
       }
       view_changed = false;
     }
@@ -2800,7 +2849,7 @@ void ui::update_buttons(void)
 #endif
 }
 
-ui::ui(rx_settings & settings_to_apply, rx_status & status, rx &receiver, uint8_t *spectrum, uint8_t *audio, uint8_t &dB10, uint8_t &zoom, waterfall &waterfall_inst) :
+ui::ui(rx_settings & settings_to_apply, rx_status & status, rx &receiver, uint8_t *spectrum, int16_t *audio, uint8_t &dB10, uint8_t &zoom, waterfall &waterfall_inst) :
   settings(default_settings),
   main_encoder(settings.global),
   menu_button(PIN_MENU),
@@ -2815,6 +2864,11 @@ ui::ui(rx_settings & settings_to_apply, rx_status & status, rx &receiver, uint8_
   zoom(zoom),
   waterfall_inst(waterfall_inst)
 {
+  for (uint16_t i = 0; i < 128; i++) {
+    const float multiplier = 0.5 * (1 - cosf(2 * M_PI * i / (128 - 1)));
+    audio_win[i] = multiplier * 32767;
+  }
+
   u8g2_Setup_ssd1306_i2c_128x64_noname_f(&u8g2, U8G2_R0,
                                          u8x8_byte_pico_hw_i2c,
                                          u8x8_gpio_and_delay_pico);

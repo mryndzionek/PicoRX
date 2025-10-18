@@ -17,7 +17,7 @@
 #define WATERFALL_REFRESH_US (50000UL) // 50ms <=> 20Hz
 
 uint8_t spectrum[256];
-uint8_t audio[128];
+int16_t audio[AUDIO_BUFFER_LEN];
 uint8_t dB10=10;
 uint8_t zoom=1;
 static rx_settings settings_to_apply;
@@ -32,7 +32,7 @@ void core1_main()
     receiver.run();
 }
 
-int main() 
+int main()
 {
   gpio_set_function(LED, GPIO_FUNC_SIO);
   gpio_set_dir(LED, GPIO_OUT);
@@ -59,7 +59,7 @@ int main()
     watchdog_update();
 
     //schedule tasks
-    if (time_us_32() - last_buttons_update > BUTTONS_REFRESH_US) 
+    if (time_us_32() - last_buttons_update > BUTTONS_REFRESH_US)
     {
       last_buttons_update = time_us_32();
       user_interface.update_buttons();
