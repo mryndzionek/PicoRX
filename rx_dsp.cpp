@@ -362,6 +362,8 @@ void __not_in_flash_func(rx_dsp :: frequency_shift)(int16_t &i, int16_t &q)
 
 bool __not_in_flash_func(rx_dsp :: decimate)(int16_t &i, int16_t &q)
 {
+      static int32_t integratori4d5 = 0;
+      static int32_t integratorq4d5 = 0;
 
       //CIC decimation filter
       //implement integrator stages
@@ -375,7 +377,12 @@ bool __not_in_flash_func(rx_dsp :: decimate)(int16_t &i, int16_t &q)
       integratorq4 += integratorq3;
 
       decimate_count++;
-      if(decimate_count >= cic_decimation_rate)
+      if(decimate_count == (cic_decimation_rate-5))
+      {
+        integratori4d5 = integratori4;
+        integratorq4d5 = integratorq4;
+      }
+      else if(decimate_count >= cic_decimation_rate)
       {
         decimate_count = 0;
 
@@ -388,8 +395,8 @@ bool __not_in_flash_func(rx_dsp :: decimate)(int16_t &i, int16_t &q)
         const int32_t combq3 = combq2-delayq2;
         const int32_t combi4 = combi3-delayi3;
         const int32_t combq4 = combq3-delayq3;
-        delayi0 = integratori4;
-        delayq0 = integratorq4;
+        delayi0 = integratori4d5;
+        delayq0 = integratorq4d5;
         delayi1 = combi1;
         delayq1 = combq1;
         delayi2 = combi2;
