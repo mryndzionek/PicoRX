@@ -32,11 +32,19 @@ void core1_main()
     receiver.run();
 }
 
-int main() 
+int main()
 {
   gpio_set_function(LED, GPIO_FUNC_SIO);
   gpio_set_dir(LED, GPIO_OUT);
   gpio_put(LED, 1);
+
+  // emergency bootloader mode
+  gpio_init(PIN_BACK);
+  gpio_set_dir(PIN_BACK, GPIO_IN);
+  gpio_pull_up(PIN_BACK);
+  if (gpio_get(PIN_BACK) == false) {
+    reset_usb_boot(0, 0);
+  }
 
   stdio_init_all();
   watchdog_enable(2000, true);
@@ -59,7 +67,7 @@ int main()
     watchdog_update();
 
     //schedule tasks
-    if (time_us_32() - last_buttons_update > BUTTONS_REFRESH_US) 
+    if (time_us_32() - last_buttons_update > BUTTONS_REFRESH_US)
     {
       last_buttons_update = time_us_32();
       user_interface.update_buttons();
