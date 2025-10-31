@@ -5,7 +5,7 @@
 #include "cordic.h"
 
 //from the sample number work out the colour and x/y coordinates
-void c_sstv_decoder :: sample_to_pixel(uint16_t &x, uint16_t &y, uint8_t &colour)
+void c_sstv_decoder :: sample_to_pixel(uint16_t &x, uint16_t &y, uint8_t &colour, int32_t image_sample)
 {
   //martin and scottie colour order is g-b-r, map to r-g-b
   static const uint8_t colourmap[4] = {1, 2, 0, 4};
@@ -383,7 +383,7 @@ bool c_sstv_decoder :: decode(uint16_t sample, uint16_t &pixel_y, uint16_t &pixe
           pixel_accumulator = 0;
           pixel_n = 0;
           last_x = 0;
-          image_sample = 0;
+          m_image_sample = 0;
           sync_timeout = m_timeout;
         }
         else
@@ -403,7 +403,7 @@ bool c_sstv_decoder :: decode(uint16_t sample, uint16_t &pixel_y, uint16_t &pixe
 
       uint16_t x, y;
       uint8_t colour;
-      sample_to_pixel(x, y, colour);
+      sample_to_pixel(x, y, colour, m_image_sample);
 
       if(x != last_x && colour < 4 && pixel_n)
       {
@@ -459,7 +459,7 @@ bool c_sstv_decoder :: decode(uint16_t sample, uint16_t &pixel_y, uint16_t &pixe
       //colour pixels
       pixel_accumulator += frequency_to_brightness(sample);
       pixel_n++;
-      image_sample+=m_scale;
+      m_image_sample+=m_scale;
 
       break;
 

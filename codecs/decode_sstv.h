@@ -50,14 +50,14 @@ class c_sstv_decoder
   uint32_t sync_counter = 0;
   uint16_t y_pixel = 0;
   uint16_t last_x = 0;
-  int32_t image_sample = 0;
+  int32_t m_image_sample = 0;
   uint16_t last_sample = 0;
   uint32_t last_hsync_sample = 0;
   uint32_t sample_number = 0;
   uint32_t confirmed_sync_sample = 0;
   e_state state = detect_sync;
   e_sync_state sync_state = detect;
-  void sample_to_pixel(uint16_t &x, uint16_t &y, uint8_t &colour);
+  void sample_to_pixel(uint16_t &x, uint16_t &y, uint8_t &colour, int32_t image_sample);
   uint8_t frequency_to_brightness(uint16_t x);
   uint32_t mean_samples_per_line;
   uint32_t sync_timeout = 0;
