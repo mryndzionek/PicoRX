@@ -297,7 +297,7 @@ uint16_t ui::audio_vu_meter_update(void) {
 ////////////////////////////////////////////////////////////////////////////////
 // Home page status display (original)
 ////////////////////////////////////////////////////////////////////////////////
-void ui::renderpage_original(rx_status & status, rx & receiver)
+void ui::renderpage_original(void)
 {
 
   receiver.access(false);
@@ -373,13 +373,13 @@ void ui::renderpage_original(rx_status & status, rx & receiver)
   }
   u8g2_DrawVLine(&u8g2, settings.global.squelch_threshold * (seg_w + 1) + seg_x + 2, seg_y, seg_h+4);
 
-  const char smeter[13][6] = {"S0", "S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8", "S9", "+10", "+20", "+30"};
+  const char _smeter[13][6] = {"S0", "S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8", "S9", "+10", "+20", "+30"};
   u8g2_SetFont(&u8g2, u8g2_font_9x15_tf);
-  w = u8g2_GetStrWidth(&u8g2, smeter[power_s]);
+  w = u8g2_GetStrWidth(&u8g2, _smeter[power_s]);
   u8g2_SetDrawColor(&u8g2, 0);
   u8g2_DrawRBox(&u8g2, (128-(w+4))/2, 48, w+4, 14, 2);
   u8g2_SetDrawColor(&u8g2, 1);
-  u8g2_DrawStr(&u8g2, (128-w)/2, 60, smeter[power_s]);
+  u8g2_DrawStr(&u8g2, (128-w)/2, 60, _smeter[power_s]);
 
   uint16_t vu = audio_vu_meter_update();
   if (vu > 121) {
@@ -396,7 +396,7 @@ void ui::renderpage_original(rx_status & status, rx & receiver)
   display_show();
 }
 
-void ui::renderpage_oscilloscope(rx_status & status, rx & receiver)
+void ui::renderpage_oscilloscope(void)
 {
   display_clear();
   for(uint8_t i = 0; i < 127; i++)
@@ -409,7 +409,7 @@ void ui::renderpage_oscilloscope(rx_status & status, rx & receiver)
   u8g2_SetDrawColor(&u8g2, 0);
   u8g2_DrawBox(&u8g2, 0, 0, 128, 8);
   u8g2_SetDrawColor(&u8g2, 1);
-  draw_slim_status(0, status, receiver);
+  draw_slim_status(0);
   const uint16_t vu = audio_vu_meter_update();
   u8g2_DrawBox(&u8g2, 0, 62, vu, 2);
   display_show();
@@ -418,10 +418,10 @@ void ui::renderpage_oscilloscope(rx_status & status, rx & receiver)
 ////////////////////////////////////////////////////////////////////////////////
 // Home page status display with bigger spectrum view
 ////////////////////////////////////////////////////////////////////////////////
-void ui::renderpage_bigspectrum(bool view_changed, rx_status & status, rx & receiver)
+void ui::renderpage_bigspectrum(bool view_changed)
 {
   display_clear();
-  draw_slim_status(0, status, receiver);
+  draw_slim_status(0);
   draw_h_tick_marks(8);
   draw_spectrum(view_changed, 13, 63);
   display_show();
@@ -430,12 +430,12 @@ void ui::renderpage_bigspectrum(bool view_changed, rx_status & status, rx & rece
 ////////////////////////////////////////////////////////////////////////////////
 // Home page status display with combined view
 ////////////////////////////////////////////////////////////////////////////////
-void ui::renderpage_combinedspectrum(bool view_changed, rx_status & status, rx & receiver)
+void ui::renderpage_combinedspectrum(bool view_changed)
 {
   if (view_changed) display_clear();
   ssd1306_fill_rectangle(&disp, 0, 0, 128, 48, 0);
   draw_waterfall(48);
-  draw_slim_status(0, status, receiver);
+  draw_slim_status(0);
   draw_h_tick_marks(8);
   draw_spectrum(view_changed, 13, 47);
   display_show();
@@ -444,20 +444,20 @@ void ui::renderpage_combinedspectrum(bool view_changed, rx_status & status, rx &
 ////////////////////////////////////////////////////////////////////////////////
 // Home page status display with big waterfall
 ////////////////////////////////////////////////////////////////////////////////
-void ui::renderpage_waterfall(bool view_changed, rx_status & status, rx & receiver)
+void ui::renderpage_waterfall(bool view_changed)
 {
   if (view_changed) display_clear();
   ssd1306_fill_rectangle(&disp, 0, 0, 128, 13, 0);
   draw_waterfall(13);
   draw_h_tick_marks(8);
-  draw_slim_status(0, status, receiver);
+  draw_slim_status(0);
   display_show();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Home page status display with big simple text
 ////////////////////////////////////////////////////////////////////////////////
-void ui::renderpage_status(rx_status & status, rx & receiver)
+void ui::renderpage_status(void)
 {
   receiver.access(false);
   const float battery_voltage = 3.0f * 3.3f * (status.battery/65535.0f);
@@ -470,7 +470,7 @@ void ui::renderpage_status(rx_status & status, rx & receiver)
   receiver.release();
 
   display_clear();
-  draw_slim_status(0, status, receiver);
+  draw_slim_status(0);
 
   u8g2_SetDrawColor(&u8g2, 1);
   u8g2_SetFont(&u8g2, u8g2_font_6x10_tf);
@@ -508,10 +508,11 @@ void ui::renderpage_status(rx_status & status, rx & receiver)
   display_show();
 }
 
-void ui::renderpage_fun(bool view_updated, rx_status & status, rx & receiver)
+void ui::renderpage_fun(bool view_updated)
 {
   static int degrees = 0;
   static int xm, ym;
+  (void)view_updated;
 
   if (degrees == 0) {
     xm = rand()%10+1;
@@ -525,7 +526,7 @@ void ui::renderpage_fun(bool view_updated, rx_status & status, rx & receiver)
 }
 
 // Draw a slim 8 pixel status line
-void ui::draw_slim_status(uint16_t y, rx_status & status, rx & receiver)
+void ui::draw_slim_status(uint16_t y)
 {
   receiver.access(false);
   const float power_dBm = status.signal_strength_dBm;
@@ -726,12 +727,13 @@ void ui::draw_analogmeter(    uint16_t startx, uint16_t starty,
 ////////////////////////////////////////////////////////////////////////////////
 // Home page status display - S meter
 ////////////////////////////////////////////////////////////////////////////////
-void ui::renderpage_smeter(bool view_changed, rx_status & status, rx & receiver)
+void ui::renderpage_smeter(bool view_changed)
 {
 
   #define NUM_DBM 3
   static int dBm_ptr = 0;
   static float dBm_avg[NUM_DBM] = {-FLT_MAX, -FLT_MAX, -FLT_MAX};
+  (void)view_changed;
 
   receiver.access(false);
   const float power_dBm = status.signal_strength_dBm;
@@ -748,7 +750,7 @@ void ui::renderpage_smeter(bool view_changed, rx_status & status, rx & receiver)
 
   display_clear();
 
-  draw_slim_status(0, status, receiver);
+  draw_slim_status(0);
   // -127dBm is needle to left
   // 100 percent needle swing
   // 84 dB of swing range
@@ -780,7 +782,6 @@ void ui::draw_spectrum(bool view_changed, uint16_t startY, uint16_t endY)
   //plot
   const uint8_t max_height = (endY-startY-2);
   const uint8_t scale = 256/max_height;
-  int16_t y=0;
 
   receiver.access(false);
   if (status.tuned) {
@@ -808,7 +809,7 @@ void ui::draw_spectrum(bool view_changed, uint16_t startY, uint16_t endY)
 
   for(uint16_t x=0; x<128; x++)
   {
-    y = spectrum[x*2]/scale;
+    const int16_t y = spectrum[x*2]/scale;
     ssd1306_draw_line(&disp, x, endY-y, x, endY, 1);
     if (settings.global.spectrum_hold) {
       if (spectrum[x * 2] > hold_buf[x]) {
@@ -1478,14 +1479,14 @@ bool ui::memory_scan(bool &ok)
   }
   else if(state == menu_active)
   {
-    bool ok = false;
-    if(main_menu(ok))
+    bool _ok = false;
+    if(main_menu(_ok))
     {
       update_display = true;
       load = true;
       scan_speed = 0;
       state = active;
-      if(ok){
+      if(_ok){
         apply_settings(false);
         autosave();
       }
@@ -1677,13 +1678,13 @@ bool ui::frequency_scan(bool &ok)
   }
   else if(state == menu_active)
   {
-    bool ok = false;
-    if(main_menu(ok))
+    bool _ok = false;
+    if(main_menu(_ok))
     {
       update_display = true;
       scan_speed = 0;
       state = active;
-      if(ok){
+      if(_ok){
         apply_settings(false);
         autosave();
       }
@@ -2637,14 +2638,14 @@ void ui::do_ui(void)
 
       switch(settings.global.view)
       {
-        case 0: renderpage_original(status, receiver); break;
-        case 1: renderpage_bigspectrum(view_changed, status, receiver);break;
-        case 2: renderpage_combinedspectrum(view_changed, status, receiver);break;
-        case 3: renderpage_waterfall(view_changed, status, receiver);break;
-        case 4: renderpage_oscilloscope(status, receiver);break;
-        case 5: renderpage_status(status, receiver);break;
-        case 6: renderpage_smeter(view_changed, status, receiver); break;
-        case 7: renderpage_fun(view_changed, status, receiver);break;
+        case 0: renderpage_original(); break;
+        case 1: renderpage_bigspectrum(view_changed);break;
+        case 2: renderpage_combinedspectrum(view_changed);break;
+        case 3: renderpage_waterfall(view_changed);break;
+        case 4: renderpage_oscilloscope();break;
+        case 5: renderpage_status();break;
+        case 6: renderpage_smeter(view_changed); break;
+        case 7: renderpage_fun(view_changed);break;
       }
       view_changed = false;
     }
@@ -2730,6 +2731,8 @@ void ui::do_ui(void)
 
 static uint8_t u8x8_gpio_and_delay_pico(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
 {
+    (void) arg_ptr;
+
     switch (msg)
     {
     case U8X8_MSG_GPIO_AND_DELAY_INIT:
@@ -2826,21 +2829,23 @@ void ui::update_buttons(void)
 #endif
 }
 
-ui::ui(rx_settings & settings_to_apply, rx_status & status, rx &receiver, uint8_t *spectrum, uint8_t *audio, uint8_t &dB10, uint8_t &zoom, waterfall &waterfall_inst) :
-  settings(default_settings),
-  main_encoder(settings.global),
-  menu_button(PIN_MENU),
-  back_button(PIN_BACK),
-  encoder_button(PIN_ENCODER_PUSH),
-  settings_to_apply(settings_to_apply),
-  status(status),
-  receiver(receiver),
-  spectrum(spectrum),
-  audio(audio),
-  dB10(dB10),
-  zoom(zoom),
-  waterfall_inst(waterfall_inst)
-{
+ui::ui(rx_settings& _settings_to_apply, rx_status& _status, rx& _receiver,
+       uint8_t* _spectrum, uint8_t* _audio, uint8_t& _dB10, uint8_t& _zoom,
+       waterfall& _waterfall_inst)
+    : settings(default_settings),
+      main_encoder(settings.global),
+      menu_button(PIN_MENU),
+      back_button(PIN_BACK),
+      encoder_button(PIN_ENCODER_PUSH),
+      settings_to_apply(_settings_to_apply),
+      status(_status),
+      receiver(_receiver),
+      spectrum(_spectrum),
+      audio(_audio),
+      dB10(_dB10),
+      zoom(_zoom),
+      waterfall_inst(_waterfall_inst) {
+
   u8g2_Setup_ssd1306_i2c_128x64_noname_f(&u8g2, U8G2_R0,
                                          u8x8_byte_pico_hw_i2c,
                                          u8x8_gpio_and_delay_pico);

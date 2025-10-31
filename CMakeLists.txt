@@ -6,7 +6,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # FetchContent to pull down the SDK sources from GitHub.
 if(NOT DEFINED ENV{PICO_SDK_PATH})
     set(ENV{PICO_SDK_FETCH_FROM_GIT} "1")
-    set(ENV{PICO_SDK_FETCH_FROM_GIT_TAG} "2.2.0")
+    set(ENV{PICO_SDK_FETCH_FROM_GIT_TAG} "2.1.0")
     set(ENV{PICOTOOL_FORCE_FETCH_FROM_GIT} "1")
     set(ENV{PICOTOOL_FETCH_FROM_GIT_PATH} "${CMAKE_BINARY_DIR}/picotool-build")
 endif()
@@ -25,8 +25,8 @@ pico_sdk_init()
 
 set(CMAKE_C_STANDARD 11)
 
-add_compile_options(-Wall -Werror -fdata-sections -ffunction-sections)
-add_compile_options(-Wall -fdata-sections -ffunction-sections)
+add_compile_options(-Wall -Werror -Wextra -Wshadow -Wstack-usage=2048
+                    -fdata-sections -ffunction-sections)
 add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>)
 add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>)
 

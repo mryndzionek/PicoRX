@@ -55,7 +55,7 @@ class rx_dsp
   int16_t demodulate(int16_t i, int16_t q, uint16_t mag, int16_t phi);
   int16_t automatic_gain_control(int16_t audio);
   int16_t apply_deemphasis(int16_t x);
-  int16_t squelch(int16_t audio, int32_t amplitude);
+  int16_t squelch(int16_t audio);
   int16_t apply_treble(int16_t x);
   int16_t apply_bass(int16_t x);
   void apply_impulse_blanker(int16_t &i, int16_t &q, uint16_t mag);

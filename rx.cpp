@@ -206,43 +206,43 @@ void rx::apply_settings()
    if(sem_try_acquire(&settings_semaphore))
    {
 
-      if(tuned_frequency_Hz > (settings_to_apply.band_7_limit * 125000))
+      if(settings_to_apply.tuned_frequency_Hz > (settings_to_apply.band_7_limit * 125000))
       {
         gpio_put(PIN_BAND_0, 0);
         gpio_put(PIN_BAND_1, 0);
         gpio_put(PIN_BAND_2, 0);
       }
-      else if(tuned_frequency_Hz > (settings_to_apply.band_6_limit * 125000))
+      else if(settings_to_apply.tuned_frequency_Hz > (settings_to_apply.band_6_limit * 125000))
       {
         gpio_put(PIN_BAND_0, 1);
         gpio_put(PIN_BAND_1, 0);
         gpio_put(PIN_BAND_2, 0);
       }
-      else if(tuned_frequency_Hz > (settings_to_apply.band_5_limit * 125000))
+      else if(settings_to_apply.tuned_frequency_Hz > (settings_to_apply.band_5_limit * 125000))
       {
         gpio_put(PIN_BAND_0, 0);
         gpio_put(PIN_BAND_1, 1);
         gpio_put(PIN_BAND_2, 0);
       }
-      else if(tuned_frequency_Hz > (settings_to_apply.band_4_limit * 125000))
+      else if(settings_to_apply.tuned_frequency_Hz > (settings_to_apply.band_4_limit * 125000))
       {
         gpio_put(PIN_BAND_0, 1);
         gpio_put(PIN_BAND_1, 1);
         gpio_put(PIN_BAND_2, 0);
       }
-      else if(tuned_frequency_Hz > (settings_to_apply.band_3_limit * 125000))
+      else if(settings_to_apply.tuned_frequency_Hz > (settings_to_apply.band_3_limit * 125000))
       {
         gpio_put(PIN_BAND_0, 0);
         gpio_put(PIN_BAND_1, 0);
         gpio_put(PIN_BAND_2, 1);
       }
-      else if(tuned_frequency_Hz > (settings_to_apply.band_2_limit * 125000))
+      else if(settings_to_apply.tuned_frequency_Hz > (settings_to_apply.band_2_limit * 125000))
       {
         gpio_put(PIN_BAND_0, 1);
         gpio_put(PIN_BAND_1, 0);
         gpio_put(PIN_BAND_2, 1);
       }
-      else if(tuned_frequency_Hz > (settings_to_apply.band_1_limit * 125000))
+      else if(settings_to_apply.tuned_frequency_Hz > (settings_to_apply.band_1_limit * 125000))
       {
         gpio_put(PIN_BAND_0, 0);
         gpio_put(PIN_BAND_1, 1);
@@ -334,7 +334,7 @@ void rx::get_audio(uint8_t audio[])
   rx_dsp_inst.get_audio_capture(audio);
 }
 
-rx::rx(rx_settings & settings_to_apply, rx_status & status) : settings_to_apply(settings_to_apply), status(status)
+rx::rx(rx_settings & _settings_to_apply, rx_status & _status) : settings_to_apply(_settings_to_apply), status(_status)
 {
 
     settings_to_apply.suspend = false;
@@ -450,6 +450,7 @@ void rx::read_batt_temp()
 
 static bool __not_in_flash_func(usb_callback)(repeating_timer_t *rt)
 {
+  (void)rt;
   usb_audio_device_task();
   return true; // keep repeating
 }
@@ -475,10 +476,10 @@ static void on_usb_set_mutevol(bool mute, int16_t vol)
 
 static void on_usb_audio_tx_ready()
 {
-  uint16_t usb_buf[SAMPLE_BUFFER_SIZE] = {0};
+  uint16_t _usb_buf[SAMPLE_BUFFER_SIZE] = {0};
 
-  ring_buffer_pop(&usb_ring_buffer, (uint8_t *)usb_buf, sizeof(usb_buf));
-  usb_audio_device_write(usb_buf, sizeof(usb_buf));
+  ring_buffer_pop(&usb_ring_buffer, (uint8_t *)_usb_buf, sizeof(_usb_buf));
+  usb_audio_device_write(_usb_buf, sizeof(_usb_buf));
 }
 
 //thread safe method to get raw IQ data
@@ -504,6 +505,7 @@ void __not_in_flash_func(rx::process_block)(uint16_t adc_samples[], int16_t audi
   int16_t usb_audio[adc_block_size/decimation_rate];
   uint16_t num_samples = rx_dsp_inst.process_block(
       adc_samples, audio, stream_raw_iq ? &usb_ring_buffer : NULL);
+  hard_assert(num_samples <= (adc_block_size / decimation_rate));
 
   for(uint16_t idx=0; idx<num_samples; ++idx)
   {
@@ -517,7 +519,7 @@ void __not_in_flash_func(rx::process_block)(uint16_t adc_samples[], int16_t audi
 
   if (!stream_raw_iq) {
     // add usb audio to ring buffer
-    int16_t tmp_audio[2 * num_samples];
+    int16_t tmp_audio[2 * (adc_block_size / decimation_rate)];
     for (uint16_t idx = 0; idx < num_samples; idx++) {
       tmp_audio[2 * idx] = usb_audio[idx];
       tmp_audio[2 * idx + 1] = usb_audio[idx];

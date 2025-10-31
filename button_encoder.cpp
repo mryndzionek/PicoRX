@@ -11,8 +11,8 @@ static const uint32_t rates[LEVELS] = {200000, 100000, 50000,
                                        20000,  20000,  20000};
 static const uint8_t increments[LEVELS] = {1, 1, 1, 1, 2, 4};
 
-button_encoder::button_encoder(s_global_settings &settings)
-    : encoder(settings) {
+button_encoder::button_encoder(s_global_settings &_settings)
+    : encoder(_settings) {
   gpio_init(PIN_AB);
   gpio_set_dir(PIN_AB, GPIO_IN);
   gpio_pull_up(PIN_AB);

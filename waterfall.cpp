@@ -43,7 +43,7 @@ void waterfall::configure_display(uint8_t settings, bool invert_colours, bool in
     if(settings == 0)
     {
       enabled = false;
-    } 
+    }
     else if(settings == 1)
     {
       enabled = true;
@@ -227,7 +227,7 @@ uint16_t waterfall::heatmap(uint8_t value, bool blend, bool highlight)
         b=fraction;
         break;
     }
-    
+
     if(blend)
     {
       r = (uint16_t)r-(r>>2) + (blend_r>>2);
@@ -301,7 +301,7 @@ void waterfall::update_spectrum(rx &receiver, s_settings &ui_settings, rx_settin
       decode_sstv(receiver);
       return;
     }
-    
+
     //update spectrum and waterfall display
     const uint16_t scope_fg = display->colour565(255, 255, 255);
     static uint16_t top_row = 0u;
@@ -382,7 +382,7 @@ void waterfall::update_spectrum(rx &receiver, s_settings &ui_settings, rx_settin
 
     static uint32_t last_frequency =0;
     if(settings.tuned_frequency_Hz != last_frequency || refresh)
-    { 
+    {
       last_frequency = settings.tuned_frequency_Hz;
 
       display->fillRect(0, scale_y, 25, dial_width, COLOUR_BLACK);
@@ -450,7 +450,7 @@ void waterfall::update_spectrum(rx &receiver, s_settings &ui_settings, rx_settin
        //draw one line of scope
        for(uint16_t scope_col=0; scope_col<num_cols; ++scope_col)
        {
- 
+
          uint8_t data_point = data_points[scope_col];//(scope_height * (uint16_t)waterfall_buffer[top_row][scope_col])/270;
 
          const int16_t fbin = scope_col-128;
@@ -458,7 +458,7 @@ void waterfall::update_spectrum(rx &receiver, s_settings &ui_settings, rx_settin
          const bool is_lsb_col = (-fbin > (status.filter_config.start_bin * zoom)) && (-fbin < (status.filter_config.stop_bin * zoom)) && status.filter_config.lower_sideband;
          const bool is_passband = is_usb_col || is_lsb_col;
          const bool col_is_tick = (fbin%tick_spacing == 0) && fbin;
- 
+
          if(scope_row < data_point)
          {
            uint16_t colour = scope_row_colour;
@@ -488,7 +488,7 @@ void waterfall::update_spectrum(rx &receiver, s_settings &ui_settings, rx_settin
          const bool is_usb_col = (fbin > (status.filter_config.start_bin * zoom)) && (fbin < (status.filter_config.stop_bin * zoom)) && status.filter_config.upper_sideband;
          const bool is_lsb_col = (-fbin > (status.filter_config.start_bin * zoom)) && (-fbin < (status.filter_config.stop_bin * zoom)) && status.filter_config.lower_sideband;
          const bool is_passband = is_usb_col || is_lsb_col;
- 
+
          uint8_t heat = waterfall_buffer[row_address][scope_col];
          uint16_t colour=heatmap(heat, is_passband, fbin==0);
          waterfall_line[scope_col] = colour;
@@ -504,9 +504,9 @@ void waterfall::update_spectrum(rx &receiver, s_settings &ui_settings, rx_settin
     //extract frequency from status
     uint32_t remainder, MHz, kHz, Hz;
     MHz = (uint32_t)settings.tuned_frequency_Hz/1000000u;
-    remainder = (uint32_t)settings.tuned_frequency_Hz%1000000u; 
+    remainder = (uint32_t)settings.tuned_frequency_Hz%1000000u;
     kHz = remainder/1000u;
-    remainder = remainder%1000u; 
+    remainder = remainder%1000u;
     Hz = remainder;
     //update frequency if changed
     static uint32_t lastMHz = 0;
@@ -541,7 +541,7 @@ void waterfall::decode_sstv(rx &receiver)
 
   uint16_t samples_processed = 0;
 
-  #ifdef MONITOR_BUFFER_LEVEL  
+  #ifdef MONITOR_BUFFER_LEVEL
 
   //Usually gets serviced about once every 50ms.  This can take longer if the
   //UI is busy.  The length of the queue needs to be adjusted to the the queue
@@ -586,7 +586,7 @@ void waterfall::decode_sstv(rx &receiver)
               //rescale imaagesto fit on screen
               if(mode == pd_120 || mode == pd_180)
               {
-                scaled_pixel_y = (uint32_t)last_pixel_y * 240 / 496; 
+                scaled_pixel_y = (uint32_t)last_pixel_y * 240 / 496;
               }
               else
               {
@@ -636,7 +636,7 @@ void waterfall::decode_sstv(rx &receiver)
               }
               display->writeHLine(0, last_pixel_y, 320, line_rgb565);
               display->dmaFlush();
-              
+
             }
             for(uint16_t x=0; x<320; ++x) line_rgb[x][0] = line_rgb[x][1] = line_rgb[x][2] = 0;
 
@@ -683,7 +683,7 @@ void waterfall::decode_sstv(rx &receiver)
 
           }
           last_pixel_y = pixel_y;
-          
+
 
           if(pixel_x < 320 && pixel_y < 256 && pixel_colour < 4) {
             if(STRETCH && modes[mode].width==160)
@@ -700,7 +700,7 @@ void waterfall::decode_sstv(rx &receiver)
             }
 
           }
-          
+
       }
    }
 }

@@ -365,7 +365,7 @@ void ILI934X::writeVLine(uint16_t x, uint16_t y, uint16_t h, const uint16_t line
 
 void ILI934X::setPixel(uint16_t x, uint16_t y, uint16_t colour)
 {
-    if (x < 0 || x >= _width || y < 0 || y >= _height)
+    if (x >= _width || y >= _height)
         return;
 
     uint16_t buffer[1];
@@ -383,9 +383,9 @@ void ILI934X::fillRect(uint16_t x, uint16_t y, uint16_t h, uint16_t w, uint16_t 
     uint16_t _h = MIN(_height - y, MAX(1, h));
 
     uint16_t buffer[_MAX_CHUNK_SIZE];
-    for (int x = 0; x < _MAX_CHUNK_SIZE; x++)
+    for (int idx = 0; idx < _MAX_CHUNK_SIZE; idx++)
     {
-        buffer[x] = colour;
+        buffer[idx] = colour;
     }
 
     uint16_t totalChunks = ((uint32_t)w * h) / _MAX_CHUNK_SIZE;
@@ -431,7 +431,10 @@ void ILI934X::drawChar(uint32_t x, uint32_t y, const uint8_t *font, char c, uint
     const uint16_t bytes_per_char = (font_width*font_height+4)/8;
     if(c<first_char||c>last_char) return;
 
-    uint16_t buffer[font_height][font_width+font_space];
+    const uint16_t full_font_width = font_width+font_space;
+    const uint16_t font_size = font_height * full_font_width;
+    hard_assert(font_size < 900);
+    static uint16_t buffer[900];
     uint16_t font_index = ((c-first_char)*bytes_per_char) + 5u;
     uint8_t data = font[font_index++];
     uint8_t bits_left = 8;
@@ -442,11 +445,11 @@ void ILI934X::drawChar(uint32_t x, uint32_t y, const uint8_t *font, char c, uint
       {
         if(data & 0x01)
         {
-          buffer[yy][xx] = fg;
+          buffer[yy*full_font_width+xx] = fg;
         }
         else
         {
-          buffer[yy][xx] = bg;
+          buffer[yy*full_font_width+xx] = bg;
         }
         data >>= 1;
         bits_left--;
@@ -461,12 +464,12 @@ void ILI934X::drawChar(uint32_t x, uint32_t y, const uint8_t *font, char c, uint
     {
       for(uint8_t yy = 0; yy<font_height; ++yy)
       {
-        buffer[yy][font_width+xx] = bg;
+        buffer[yy*full_font_width + font_width+xx] = bg;
       }
     }
 
     _writeBlock(x, y, x+font_width+font_space-1, y+font_height-1);
-    _writePixels((uint16_t *)buffer, sizeof(buffer)/2);
+    _writePixels((uint16_t *)buffer, font_size);
 }
 
 void ILI934X::drawString(uint32_t x, uint32_t y, const uint8_t *font, const char *s, uint16_t fg, uint16_t bg) {

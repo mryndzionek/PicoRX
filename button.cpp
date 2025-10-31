@@ -4,7 +4,7 @@
 
 #include "pico/stdlib.h"
 
-button ::button(uint8_t gpio_num) : gpio_num(gpio_num) {
+button ::button(uint8_t _gpio_num) : gpio_num(_gpio_num) {
   button_state = idle;
   time_pressed = 0;
   pressed_count = 0;
