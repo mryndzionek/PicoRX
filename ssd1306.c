@@ -117,10 +117,7 @@ bool ssd1306_init(ssd1306_t *p, uint16_t width, uint16_t height, uint8_t address
     p->disp_col_offset=0;
     p->i2c_i=i2c_instance;
 
-    // 1 + p->width so each page is 129 bytes long
-    // allows room for the 0x40 byte at the start of each page
-    // draw_pixel knows about this and does the right thing
-    p->bufsize = (p->pages) * (1 + p->width);
+    p->bufsize = (p->pages) * (p->width);
     p->buffer = NULL;
     p->power_state = true;
 

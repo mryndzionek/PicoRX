@@ -353,11 +353,10 @@ rx::rx(rx_settings & _settings_to_apply, rx_status & _status) : settings_to_appl
     ring_buffer_init(&usb_ring_buffer, usb_buf, USB_BUF_SIZE, 1);
 
     //configure SMPS into power save mode
-    const uint8_t PSU_PIN = 23;
-    gpio_init(PSU_PIN);
-    gpio_set_function(PSU_PIN, GPIO_FUNC_SIO);
-    gpio_set_dir(PSU_PIN, GPIO_OUT);
-    gpio_put(PSU_PIN, 1);
+    gpio_init(PIN_PSU);
+    gpio_set_function(PIN_PSU, GPIO_FUNC_SIO);
+    gpio_set_dir(PIN_PSU, GPIO_OUT);
+    gpio_put(PIN_PSU, 1);
 
     //ADC Configuration
     adc_init();
