@@ -1,12 +1,12 @@
 #ifndef __SSTV_DECODER_H__
 #define __SSTV_DECODER_H__
 
-enum e_sstv_mode 
+enum e_sstv_mode
 {
-  martin_m1, 
-  martin_m2, 
-  scottie_s1, 
-  scottie_s2, 
+  martin_m1,
+  martin_m2,
+  scottie_s1,
+  scottie_s2,
   pd_50,
   pd_90,
   pd_120,
@@ -28,7 +28,7 @@ enum e_state
   decode_line,
 };
 
-struct s_sstv_mode 
+struct s_sstv_mode
 {
   uint16_t width;
   uint16_t max_height;
@@ -50,14 +50,14 @@ class c_sstv_decoder
   uint32_t sync_counter = 0;
   uint16_t y_pixel = 0;
   uint16_t last_x = 0;
-  uint32_t image_sample = 0;
+  int32_t image_sample = 0;
   uint16_t last_sample = 0;
   uint32_t last_hsync_sample = 0;
   uint32_t sample_number = 0;
   uint32_t confirmed_sync_sample = 0;
   e_state state = detect_sync;
   e_sync_state sync_state = detect;
-  void sample_to_pixel(uint16_t &x, uint16_t &y, uint8_t &colour, int32_t image_sample);
+  void sample_to_pixel(uint16_t &x, uint16_t &y, uint8_t &colour);
   uint8_t frequency_to_brightness(uint16_t x);
   uint32_t mean_samples_per_line;
   uint32_t sync_timeout = 0;
@@ -81,7 +81,7 @@ class c_sstv_decoder
   e_sstv_mode get_mode();
   s_sstv_mode * get_modes();
 
-  
+
 };
 
 #endif

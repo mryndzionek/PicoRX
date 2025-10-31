@@ -5,7 +5,7 @@
 #include "cordic.h"
 
 //from the sample number work out the colour and x/y coordinates
-void c_sstv_decoder :: sample_to_pixel(uint16_t &x, uint16_t &y, uint8_t &colour, int32_t image_sample)
+void c_sstv_decoder :: sample_to_pixel(uint16_t &x, uint16_t &y, uint8_t &colour)
 {
   //martin and scottie colour order is g-b-r, map to r-g-b
   static const uint8_t colourmap[4] = {1, 2, 0, 4};
@@ -67,7 +67,7 @@ void c_sstv_decoder :: sample_to_pixel(uint16_t &x, uint16_t &y, uint8_t &colour
 
   else if( decode_mode == pd_50 || decode_mode == pd_90 || decode_mode == pd_120 || decode_mode == pd_180)
   {
-    static const uint8_t colourmap[5] = {0, 1, 2, 3, 4};
+    static const uint8_t colourmap2[5] = {0, 1, 2, 3, 4};
 
     image_sample -= modes[decode_mode].samples_per_hsync;
     if(image_sample < 0)
@@ -80,7 +80,7 @@ void c_sstv_decoder :: sample_to_pixel(uint16_t &x, uint16_t &y, uint8_t &colour
     image_sample -= y*mean_samples_per_line;
     colour = image_sample/modes[decode_mode].samples_per_colour_line;
     image_sample -= colour*modes[decode_mode].samples_per_colour_line;
-    colour = colourmap[colour];
+    colour = colourmap2[colour];
     x = image_sample/modes[decode_mode].samples_per_pixel;
   }
 
@@ -403,7 +403,7 @@ bool c_sstv_decoder :: decode(uint16_t sample, uint16_t &pixel_y, uint16_t &pixe
 
       uint16_t x, y;
       uint8_t colour;
-      sample_to_pixel(x, y, colour, image_sample);
+      sample_to_pixel(x, y, colour);
 
       if(x != last_x && colour < 4 && pixel_n)
       {
@@ -475,7 +475,7 @@ bool c_sstv_decoder :: decode(uint16_t sample, uint16_t &pixel_y, uint16_t &pixe
 
 e_sstv_mode c_sstv_decoder :: get_mode()
 {
-  return decode_mode;  
+  return decode_mode;
 }
 
 s_sstv_mode * c_sstv_decoder :: get_modes()

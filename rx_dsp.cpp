@@ -290,15 +290,15 @@ uint16_t __not_in_flash_func(rx_dsp :: process_block)(uint16_t samples[], int16_
 
     //Measure amplitude (for signal strength indicator)
     uint16_t magnitude;
-    int16_t phase;
-    rectangular_2_polar(i, q, &magnitude, &phase);
+    int16_t _phase;
+    rectangular_2_polar(i, q, &magnitude, &_phase);
     magnitude_sum += magnitude;
 
     // Impulse noise blanker
     apply_impulse_blanker(i, q, magnitude);
 
     //Demodulate to give audio sample
-    int32_t audio = demodulate(i, q, magnitude, phase);
+    int32_t audio = demodulate(i, q, magnitude, _phase);
 
     //De-emphasis
     audio = apply_deemphasis(audio);
@@ -442,14 +442,14 @@ inline int32_t wrap(int32_t x) {
   return x;
 }
 
-void rx_dsp::amsync_reset(void) { amsync = {0}; }
+void rx_dsp::amsync_reset(void) { amsync = {0, 0, 0, 0, 0, 0}; }
 
-int16_t __not_in_flash_func(rx_dsp :: demodulate)(int16_t i, int16_t q, uint16_t magnitude, int16_t phase)
+int16_t __not_in_flash_func(rx_dsp :: demodulate)(int16_t i, int16_t q, uint16_t magnitude, int16_t _phase)
 {
-    int16_t frequency = phase - last_phase;
-    last_phase = phase;
+    const int16_t _frequency = _phase - last_phase;
+    last_phase = _phase;
 
-    frequency_accumulator += frequency;
+    frequency_accumulator += _frequency;
     frequency_count ++;
 
     if(mode == AM)
@@ -503,7 +503,7 @@ int16_t __not_in_flash_func(rx_dsp :: demodulate)(int16_t i, int16_t q, uint16_t
     }
     else if(mode == FM)
     {
-        return frequency;
+        return _frequency;
     }
     else if(mode == LSB || mode == USB)
     {
@@ -518,9 +518,9 @@ int16_t __not_in_flash_func(rx_dsp :: demodulate)(int16_t i, int16_t q, uint16_t
     }
 }
 
-int16_t __not_in_flash_func(rx_dsp::squelch)(int16_t audio, int32_t signal_amplitude)
+int16_t __not_in_flash_func(rx_dsp::squelch)(int16_t audio, int32_t amp)
 {
-    if(signal_amplitude > squelch_threshold)
+    if(amp > squelch_threshold)
       squelch_time_ms = to_ms_since_boot(get_absolute_time());
     const uint32_t time_since_active = to_ms_since_boot(get_absolute_time())-squelch_time_ms;
 
@@ -554,9 +554,9 @@ int16_t __not_in_flash_func(rx_dsp::automatic_gain_control)(int16_t audio_in)
     // Attack is fast so that AGC reacts fast to increases in power
     // Hang time and decay are relatively slow to prevent rapid gain changes
 
-    static const uint8_t extra_bits = 16;
+    static const uint8_t _extra_bits = 16;
     int32_t audio = audio_in;
-    const int32_t audio_scaled = audio << extra_bits;
+    const int32_t audio_scaled = audio << _extra_bits;
     if(audio_scaled > max_hold)
     {
       //attack
@@ -575,7 +575,7 @@ int16_t __not_in_flash_func(rx_dsp::automatic_gain_control)(int16_t audio_in)
     }
 
     //calculate gain needed to amplify to full scale
-    const int16_t magnitude = max_hold >> extra_bits;
+    const int16_t magnitude = max_hold >> _extra_bits;
     const int16_t limit = INT16_MAX; //hard limit
     const int16_t setpoint = limit/2; //about half full scale
 

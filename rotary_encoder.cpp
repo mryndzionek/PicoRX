@@ -5,7 +5,7 @@
 #include "pins.h"
 
 
-rotary_encoder::rotary_encoder(s_global_settings &settings) : encoder(settings) {
+rotary_encoder::rotary_encoder(s_global_settings &_settings) : encoder(_settings) {
   gpio_set_function(PIN_AB, GPIO_FUNC_PIO1);
   gpio_set_function(PIN_AB + 1, GPIO_FUNC_PIO1);
   uint offset = pio_add_program(pio, &quadrature_encoder_program);

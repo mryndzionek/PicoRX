@@ -85,8 +85,8 @@ void noise_reduction(int16_t i[], int16_t q[], int32_t noise_estimate[], int16_t
         } else if (snr > snr_lin_high) {
           adaptive_threshold = adaptive_threshold_low;
         } else {
-          uint16_t idx = (snr - snr_lin_low) / snr_lut_scale;
-          adaptive_threshold = adaptive_threshold_lut[idx];
+          const uint16_t k = (snr - snr_lin_low) / snr_lut_scale;
+          adaptive_threshold = adaptive_threshold_lut[k];
         }
       }
 
@@ -95,8 +95,8 @@ void noise_reduction(int16_t i[], int16_t q[], int32_t noise_estimate[], int16_t
       {
         gain = scaling-(adaptive_threshold*(noise_level>>noise_smoothing)/signal_level);
         gain = std::min(std::max(gain, (int32_t)0), scaling);
-      } 
-      
+      }
+
       signal_estimate[idx] = signal_level;
       noise_estimate[idx] = noise_level;
       i[idx] = (i[idx]*gain)>>fraction_bits;

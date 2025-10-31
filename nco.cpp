@@ -11,7 +11,7 @@ float nco_set_frequency(PIO pio, uint sm, float tuned_frequency, uint32_t &syste
 
     double adjusted_frequency_up = tuned_frequency + (if_frequency_hz_over_100*100);
     double adjusted_frequency_down = tuned_frequency - (if_frequency_hz_over_100*100);
-    PLLSettings best_settings = {0};
+    PLLSettings best_settings = {0, 0, 0, 0, 0};
     double best_frequency = 1.0;
     double best_divider = 0.0;
     double best_error = 1000000.0;

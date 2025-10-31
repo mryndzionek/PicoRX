@@ -13,7 +13,9 @@ class waterfall
   public:
   waterfall();
   ~waterfall();
-  void update_spectrum(rx &receiver, s_settings &ui_settings, rx_settings &settings, rx_status &status, uint8_t spectrum[], uint8_t dB10, uint8_t zoom);
+  void update_spectrum(rx& receiver, s_settings& ui_settings,
+                       rx_settings& settings, rx_status& status,
+                       uint8_t spectrum[], uint8_t dB10, uint8_t zoom);
   void configure_display(uint8_t settings, bool invert_colours, bool invert_tft, uint8_t display_driver);
   void powerOn(bool state);
 
@@ -25,7 +27,6 @@ class waterfall
   float S_to_dBm(int S);
   int dBm_to_S(float power_dBm);
   uint8_t waterfall_buffer[120][256];
-  uint8_t *spectrum;
   ILI934X *display;
   bool enabled = false;
   bool power_state = true;

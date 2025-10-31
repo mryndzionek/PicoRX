@@ -110,14 +110,14 @@ class ui
 
   uint16_t audio_vu_meter_update(void);
 
-  void renderpage_original(rx_status & status, rx & receiver);
-  void renderpage_bigspectrum(bool view_changed, rx_status & status, rx & receiver);
-  void renderpage_oscilloscope(rx_status & status, rx & receiver);
-  void renderpage_combinedspectrum(bool view_changed, rx_status & status, rx & receiver);
-  void renderpage_waterfall(bool view_changed, rx_status & status, rx & receiver);
-  void renderpage_status(rx_status & status, rx & receiver);
-  void renderpage_fun(bool view_changed, rx_status & status, rx & receiver);
-  void renderpage_smeter(bool view_changed, rx_status & status, rx & receiver);
+  void renderpage_original(void);
+  void renderpage_bigspectrum(bool view_changed);
+  void renderpage_oscilloscope(void);
+  void renderpage_combinedspectrum(bool view_changed);
+  void renderpage_waterfall(bool view_changed);
+  void renderpage_status(void);
+  void renderpage_fun(bool view_changed);
+  void renderpage_smeter(bool view_changed);
 
   int dBm_to_S(float power_dBm);
   float S_to_dBm(int S);
@@ -126,7 +126,7 @@ class ui
   void draw_h_tick_marks(uint16_t startY);
   void draw_spectrum(bool view_changed, uint16_t startY, uint16_t endY);
   void draw_waterfall(uint16_t startY);
-  void draw_slim_status(uint16_t y, rx_status & status, rx & receiver);
+  void draw_slim_status(uint16_t y);
   void draw_vertical_dBm(uint16_t x, float power_dBm, float squelch);
   void draw_analogmeter(    uint16_t startx, uint16_t starty,
                               uint16_t width, int16_t height,
@@ -184,7 +184,9 @@ class ui
   s_settings & get_settings(){return settings;};
   void autorestore();
   void do_ui(void);
-  ui(rx_settings & settings_to_apply, rx_status & status, rx &receiver, uint8_t *spectrum, uint8_t *audio, uint8_t &dB10, uint8_t &zoom, waterfall &waterfall_inst);
+  ui(rx_settings& _settings_to_apply, rx_status& _status, rx& _receiver,
+     uint8_t* _spectrum, uint8_t* _audio, uint8_t& _dB10, uint8_t& _zoom,
+     waterfall& _waterfall_inst);
   void update_buttons(void);
 
 };

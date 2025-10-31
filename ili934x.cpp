@@ -82,7 +82,7 @@ void ILI934X::configure_ili9488()
 
   // VCOM Control
   _write(0xC5, (uint8_t *)"\x00\x12\x80", 3);
-  
+
   // Power Control 2
   _write(_MADCTL, (uint8_t *)"\x48", 1);
 
@@ -112,7 +112,7 @@ void ILI934X::configure_ili9488()
   sleep_ms(120);
 
   //Display on
-  _write(_DISPON, NULL, 0);  
+  _write(_DISPON, NULL, 0);
   sleep_ms(25);
 }
 
@@ -123,41 +123,41 @@ void ILI934X::configure_st7796()
   sleep_ms(120);
   _write(0x11, NULL, 0);
   sleep_ms(120);
-  
+
   //Command Set control
-  _write(0xF0, (uint8_t *)"\xC3", 1);//Enable extension command 2 partI                               
-  _write(0xF0, (uint8_t *)"\x96", 1);//Enable extension command 2 partII                               
+  _write(0xF0, (uint8_t *)"\xC3", 1);//Enable extension command 2 partI
+  _write(0xF0, (uint8_t *)"\x96", 1);//Enable extension command 2 partII
   _write(0x36, (uint8_t *)"\x48", 1);
 
   //Interface Pixel Format
-  _write(_PIXSET, (uint8_t *)"\x55", 1);//Control interface color format set to 16 
-	
+  _write(_PIXSET, (uint8_t *)"\x55", 1);//Control interface color format set to 16
+
   //Column inversion
-  _write(0xB4, (uint8_t *)"\x01", 1);//1-dot inversion 
+  _write(0xB4, (uint8_t *)"\x01", 1);//1-dot inversion
 
   //Display Function Control
-  _write(_DISCTRL, (uint8_t *)"\x80\x02\x3B", 3);//1-dot inversion 
+  _write(_DISCTRL, (uint8_t *)"\x80\x02\x3B", 3);//1-dot inversion
 
   //Display Output Ctrl Adjust
   _write(_DTCTRLA, (uint8_t *)"\x40\x8A\x00\x00\x29\x19\xA5\x33", 8);
-	
+
   //Power control2
   _write(_PWCTRL2, (uint8_t *)"\x06", 1);
 
   //Power control 3
-  _write(_PWCTRL3, (uint8_t *)"\xA7", 1); 
+  _write(_PWCTRL3, (uint8_t *)"\xA7", 1);
 
   //VCOM Control
   _write(_VMCTRL1, (uint8_t *)"\x18", 1);
 
   sleep_ms(120);
-	
+
   //ST7796 Gamma Sequence
-  _write(_PGAMCTRL, (uint8_t *)"\xF0\x09\x0b\x06\x04\x15\x2f\x54\x42\x3c\x17\x14\x18\x1b", 14); 
+  _write(_PGAMCTRL, (uint8_t *)"\xF0\x09\x0b\x06\x04\x15\x2f\x54\x42\x3c\x17\x14\x18\x1b", 14);
   _write(_NGAMCTRL, (uint8_t *)"\xE0\x09\x0B\x06\x04\x03\x2B\x43\x42\x3B\x16\x14\x17\x1B", 14);
 
   sleep_ms(120);
-	
+
   //Command Set control
   _write(0xF0, (uint8_t *)"\x3C", 1);
   _write(0xF0, (uint8_t *)"\x69", 1);
@@ -273,7 +273,7 @@ void ILI934X::init(ILI934X_ROTATION rotation, bool invert_colours, bool invert_d
     configure_ili9341_2();
   }
 
-  if (invert_display) 
+  if (invert_display)
   {
     _write(_INVON);
   }
@@ -365,7 +365,7 @@ void ILI934X::writeVLine(uint16_t x, uint16_t y, uint16_t h, const uint16_t line
 
 void ILI934X::setPixel(uint16_t x, uint16_t y, uint16_t colour)
 {
-    if (x < 0 || x >= _width || y < 0 || y >= _height)
+    if (x >= _width || y >= _height)
         return;
 
     uint16_t buffer[1];
@@ -383,9 +383,9 @@ void ILI934X::fillRect(uint16_t x, uint16_t y, uint16_t h, uint16_t w, uint16_t 
     uint16_t _h = MIN(_height - y, MAX(1, h));
 
     uint16_t buffer[_MAX_CHUNK_SIZE];
-    for (int x = 0; x < _MAX_CHUNK_SIZE; x++)
+    for (int i = 0; i < _MAX_CHUNK_SIZE; i++)
     {
-        buffer[x] = colour;
+        buffer[i] = colour;
     }
 
     uint16_t totalChunks = ((uint32_t)w * h) / _MAX_CHUNK_SIZE;
@@ -403,7 +403,7 @@ void ILI934X::fillRect(uint16_t x, uint16_t y, uint16_t h, uint16_t w, uint16_t 
         _writePixels((uint16_t *)buffer, remaining);
     }
 
-    
+
 }
 
 void ILI934X::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16_t color)
@@ -411,7 +411,7 @@ void ILI934X::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint1
   int dx = abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
   int dy = -abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
   int err = dx + dy, e2;
-  
+
   while (1) {
       setPixel(x0, y0, color);
       if (x0 == x1 && y0 == y1) break;
@@ -423,6 +423,7 @@ void ILI934X::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint1
 
 void ILI934X::drawChar(uint32_t x, uint32_t y, const uint8_t *font, char c, uint16_t fg, uint16_t bg) {
 
+    static uint16_t buffer[30][30];
     const uint8_t font_height = font[0];
     const uint8_t font_width  = font[1];
     const uint8_t font_space  = font[2];
@@ -431,7 +432,9 @@ void ILI934X::drawChar(uint32_t x, uint32_t y, const uint8_t *font, char c, uint
     const uint16_t bytes_per_char = (font_width*font_height+4)/8;
     if(c<first_char||c>last_char) return;
 
-    uint16_t buffer[font_height][font_width+font_space];
+    hard_assert(font_height <= 30);
+    hard_assert((font_width + font_space) <= 30);
+
     uint16_t font_index = ((c-first_char)*bytes_per_char) + 5u;
     uint8_t data = font[font_index++];
     uint8_t bits_left = 8;
@@ -598,11 +601,11 @@ void ILI934X::fillCircle(uint16_t xc, uint16_t yc, uint16_t r, uint16_t colour)
     }
 }
 
-void ILI934X:: drawCircle(uint16_t xc, uint16_t yc, uint16_t radius, uint16_t colour) 
+void ILI934X:: drawCircle(uint16_t xc, uint16_t yc, uint16_t radius, uint16_t colour)
 {
     int16_t x = 0, y = radius;
     int16_t d = 1 - radius;
-    
+
     while (x <= y) {
         setPixel(xc + x, yc + y, colour);
         setPixel(xc - x, yc + y, colour);
@@ -612,7 +615,7 @@ void ILI934X:: drawCircle(uint16_t xc, uint16_t yc, uint16_t radius, uint16_t co
         setPixel(xc - y, yc + x, colour);
         setPixel(xc + y, yc - x, colour);
         setPixel(xc - y, yc - x, colour);
-        
+
         x++;
         if (d < 0) {
             d += 2 * x + 1;
@@ -631,7 +634,7 @@ void ILI934X::drawRect(uint16_t x, uint16_t y, uint16_t h, uint16_t w, uint16_t 
   fillRect(x+w-1, y, h, 1, colour);
 }
 
-void ILI934X::drawEllipse(int xc, int yc, int rx, int ry, uint16_t colour) 
+void ILI934X::drawEllipse(int xc, int yc, int rx, int ry, uint16_t colour)
 {
     int x = 0;
     int y = ry;
@@ -692,7 +695,7 @@ void ILI934X:: drawFastVline(int x, int y0, int y1, uint16_t colour)
   fillRect(x, std::min(y0, y1), std::max(y0, y1) - std::min(y0, y1) + 1, 1, colour);
 }
 
-void ILI934X:: fillEllipse(int xc, int yc, int rx, int ry, uint16_t colour) 
+void ILI934X:: fillEllipse(int xc, int yc, int rx, int ry, uint16_t colour)
 {
     int x = 0;
     int y = ry;
@@ -738,7 +741,7 @@ void ILI934X:: fillEllipse(int xc, int yc, int rx, int ry, uint16_t colour)
     }
 }
 
-void ILI934X:: drawFilledCircleQuadrant(int xc, int yc, int r, int quadrant, uint16_t colour) 
+void ILI934X:: drawFilledCircleQuadrant(int xc, int yc, int r, int quadrant, uint16_t colour)
 {
     int x = 0;
     int y = r;
@@ -775,7 +778,7 @@ void ILI934X:: drawFilledCircleQuadrant(int xc, int yc, int r, int quadrant, uin
     }
 }
 
-void ILI934X:: fillRoundedRect(int x, int y, int h, int w, int r, uint16_t colour) 
+void ILI934X:: fillRoundedRect(int x, int y, int h, int w, int r, uint16_t colour)
 {
     // Sanity check: radius can't be more than half width/height
     if (r > w / 2) r = w / 2;
@@ -846,14 +849,14 @@ void ILI934X:: drawRoundedRect(int x, int y, int h, int w, int r, uint16_t colou
     drawCircleQuadrant(x + w - r - 1, y + h - r - 1, r, 3, colour); // Bottom-right
 }
 
-void ILI934X:: drawTriangle(int x0, int y0, int x1, int y1, int x2, int y2, uint16_t colour) 
+void ILI934X:: drawTriangle(int x0, int y0, int x1, int y1, int x2, int y2, uint16_t colour)
 {
     drawLine(x0, y0, x1, y1, colour);
     drawLine(x1, y1, x2, y2, colour);
     drawLine(x2, y2, x0, y0, colour);
 }
 
-void ILI934X:: fillTriangle(int x0, int y0, int x1, int y1, int x2, int y2, uint16_t colour) 
+void ILI934X:: fillTriangle(int x0, int y0, int x1, int y1, int x2, int y2, uint16_t colour)
 {
     // Sort the vertices by y-coordinate ascending (y0 <= y1 <= y2)
     if (y0 > y1) { int t; t = y0; y0 = y1; y1 = t; t = x0; x0 = x1; x1 = t; }

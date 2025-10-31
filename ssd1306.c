@@ -85,7 +85,7 @@ void ssd1306_scroll_screen(ssd1306_t *p, int16_t x, int16_t y) {
     }
     // split it back out
     // can do some X shifting here too...
-    unsigned int new_x = i + x;
+    int new_x = i + x;
     if ((new_x >= 0) && (new_x <= (p->width - 1))) {
         for (uint32_t page=0; page < p->pages; page++) {
             p->buffer[page*p->width + new_x] = temp & 0xff;
@@ -95,8 +95,8 @@ void ssd1306_scroll_screen(ssd1306_t *p, int16_t x, int16_t y) {
   }
   if (x != 0) {
     // assume x is negative so we zero from the right
-    int32_t start = p->width+x;
-    int32_t end = p->width - 1;
+    start = p->width+x;
+    end = p->width - 1;
     if (x>0) { // zero from the left
         start = 1;
         end = x;
@@ -187,8 +187,8 @@ void ssd1306_draw_line(ssd1306_t *p, int32_t x1, int32_t y1, int32_t x2, int32_t
 }
 
 void ssd1306_fill_rectangle(ssd1306_t *p, int32_t x, int32_t y, uint32_t width, uint32_t height, uint8_t colour) {
-    for(int32_t i=0; i<width; ++i)
-        for(int32_t j=0; j<height; ++j)
+    for(int32_t i=0; i<(int32_t)width; ++i)
+        for(int32_t j=0; j<(int32_t)height; ++j)
             ssd1306_draw_pixel(p, x+i, y+j, colour);
 
 }
@@ -289,8 +289,8 @@ void ssd1306_bmp_show_image_with_offset(ssd1306_t *p, const uint8_t *data, const
 
     int step=biHeight>0?-1:1;
     int border=biHeight>0?-1:biHeight;
-    for(uint32_t y=biHeight>0?biHeight-1:0; y!=border; y+=step) {
-        for(uint32_t x=0; x<biWidth; ++x) {
+    for(int32_t y=biHeight>0?biHeight-1:0; y!=border; y+=step) {
+        for(int32_t x=0; x<biWidth; ++x) {
             if(((img_data[x>>3]>>(7-(x&7)))&1)==color_val)
                 ssd1306_draw_pixel(p, x_offset+x, y_offset+y, 1);
         }
