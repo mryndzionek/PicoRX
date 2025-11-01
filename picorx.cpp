@@ -23,7 +23,7 @@ uint8_t zoom=1;
 static rx_settings settings_to_apply;
 static rx_status status;
 static rx receiver(settings_to_apply, status);
-waterfall waterfall_inst;
+static waterfall waterfall_inst(receiver);
 static ui user_interface(settings_to_apply, status, receiver, spectrum, audio, dB10, zoom, waterfall_inst);
 
 void core1_main()
@@ -91,7 +91,7 @@ int main()
     if(time_us_32() - last_waterfall_update > WATERFALL_REFRESH_US)
     {
       last_waterfall_update = time_us_32();
-      waterfall_inst.update_spectrum(receiver, user_interface.get_settings(), settings_to_apply, status, spectrum, dB10, zoom);
+      waterfall_inst.update_spectrum(user_interface.get_settings(), settings_to_apply, status, spectrum, dB10, zoom);
     }
 
   }

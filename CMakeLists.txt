@@ -69,7 +69,8 @@ set(PICORX_SRCS
     ${CMAKE_CURRENT_LIST_DIR}/usb_descriptors.c
     ${CMAKE_CURRENT_LIST_DIR}/usb_audio_device.c
     ${CMAKE_CURRENT_LIST_DIR}/ring_buffer_lib.c
-    ${CMAKE_CURRENT_LIST_DIR}/codecs/decode_sstv.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/codecs/sstv_decoder.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/codecs/sstv_decoder_picorx.cpp
     ${CMAKE_CURRENT_LIST_DIR}/codecs/cordic.cpp
 )
 
