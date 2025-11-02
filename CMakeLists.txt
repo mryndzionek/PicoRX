@@ -45,6 +45,8 @@ target_sources(u8g2 PRIVATE ${U8G2_SRCS} ${U8G2_HDRS})
 target_compile_options(u8g2 PRIVATE -Wno-unused-function -Wno-unused-variable)
 target_include_directories(u8g2 PUBLIC ${CMAKE_CURRENT_LIST_DIR}/external/u8g2/csrc/)
 
+set_source_files_properties(m0FaultDispatch.c PROPERTIES COMPILE_FLAGS "-Wno-unused-variable -Wno-maybe-uninitialized")
+
 set(PICORX_SRCS
     ${CMAKE_CURRENT_LIST_DIR}/ssd1306.c
     ${CMAKE_CURRENT_LIST_DIR}/picorx.cpp
@@ -72,6 +74,8 @@ set(PICORX_SRCS
     ${CMAKE_CURRENT_LIST_DIR}/codecs/sstv_decoder.cpp
     ${CMAKE_CURRENT_LIST_DIR}/codecs/sstv_decoder_picorx.cpp
     ${CMAKE_CURRENT_LIST_DIR}/codecs/cordic.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/fault.c
+    ${CMAKE_CURRENT_LIST_DIR}/m0FaultDispatch.c
 )
 
 set(PICORX_LIBS
@@ -85,6 +89,7 @@ set(PICORX_LIBS
     hardware_dma
     hardware_i2c
     hardware_spi
+    hardware_exception
     tinyusb_device
     tinyusb_board
     u8g2
