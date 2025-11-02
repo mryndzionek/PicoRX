@@ -13,6 +13,8 @@
 #include "rx_definitions.h"
 #include "ui.h"
 #include "pins.h"
+#include "utils.h"
+
 #define SPI_PORT spi1
 
 
@@ -350,8 +352,7 @@ void waterfall::update_spectrum(s_settings &ui_settings, rx_settings &settings, 
     if(settings.mode != last_mode || refresh)
     {
       last_mode = settings.mode;
-      const char modes[6][4]  = {"AM ", "AMS", "LSB", "USB", "FM ", "CW "};
-      display->drawString(168, 31, font_16x12, modes[settings.mode], COLOUR_YELLOW, COLOUR_BLACK);
+      display->drawString(168, 31, font_16x12, mode_to_str(settings.mode), COLOUR_YELLOW, COLOUR_BLACK);
     }
 
     static uint8_t last_zoom = 255;
