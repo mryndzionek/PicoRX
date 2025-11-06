@@ -4,6 +4,7 @@
 #include "utils.h"
 #include "pico/stdlib.h"
 #include "cic_corrections.h"
+#include "wavelet_denoiser.h"
 
 #include <math.h>
 #include <cstdio>
@@ -280,6 +281,8 @@ uint16_t __not_in_flash_func(rx_dsp :: process_block)(uint16_t samples[], int16_
   fft_filter_inst.process_sample(iq, filter_control, capture);
   if(filter_control.capture) sem_release(&spectrum_semaphore);
 
+  int16_t audio_buf[adc_block_size/decimation_rate];
+
   for(uint16_t idx=0; idx<adc_block_size/decimation_rate; idx++)
   {
     int16_t i = iq[2 * idx];
@@ -298,10 +301,18 @@ uint16_t __not_in_flash_func(rx_dsp :: process_block)(uint16_t samples[], int16_
     apply_impulse_blanker(i, q, magnitude);
 
     //Demodulate to give audio sample
-    int32_t audio = demodulate(i, q, magnitude, _phase);
+    audio_buf[idx] = demodulate(i, q, magnitude, _phase);
 
-    //De-emphasis
-    audio = apply_deemphasis(audio);
+  }
+
+  if (wavelet_threshold || squelch_adaptive) {
+    voice_activity = wavelet_denoise(audio_buf, wavelet_threshold > 0);
+  }
+
+  for (uint16_t idx = 0; idx < adc_block_size / decimation_rate; idx++) {
+
+    // De-emphasis
+    int32_t audio = apply_deemphasis(audio_buf[idx]);
 
     // Bass
     audio = apply_bass(audio);
@@ -309,14 +320,14 @@ uint16_t __not_in_flash_func(rx_dsp :: process_block)(uint16_t samples[], int16_
     // Treble
     audio = apply_treble(audio);
 
-    //Automatic gain control scales signal to use full 16 bit range
-    //e.g. -32767 to 32767
+    // Automatic gain control scales signal to use full 16 bit range
+    // e.g. -32767 to 32767
     audio = automatic_gain_control(audio);
 
     //squelch
     audio = squelch(audio);
 
-    //output raw audio
+    // output raw audio
     audio_samples[idx] = audio;
   }
 
@@ -520,8 +531,13 @@ int16_t __not_in_flash_func(rx_dsp :: demodulate)(int16_t i, int16_t q, uint16_t
 
 int16_t __not_in_flash_func(rx_dsp::squelch)(int16_t audio)
 {
-    if(signal_amplitude > squelch_threshold)
-      squelch_time_ms = to_ms_since_boot(get_absolute_time());
+    if (squelch_adaptive) {
+      if (voice_activity)
+        squelch_time_ms = to_ms_since_boot(get_absolute_time());
+    } else {
+      if (signal_amplitude > squelch_threshold)
+        squelch_time_ms = to_ms_since_boot(get_absolute_time());
+    }
     const uint32_t time_since_active = to_ms_since_boot(get_absolute_time())-squelch_time_ms;
 
     if(time_since_active < squelch_timeout_ms)
@@ -684,6 +700,13 @@ void rx_dsp ::set_impulse_threshold(uint8_t it) {
   impulse_threshold = it;
 }
 
+void rx_dsp ::set_wavelet_threshold(uint8_t wt) {
+  if (wt > 0) {
+    wavelet_set_threshold(wt - 1);
+  }
+  wavelet_threshold = wt;
+}
+
 void rx_dsp :: set_agc_control(uint8_t agc_control, uint8_t agc_gain)
 {
   //input fs=480000.000000 Hz
@@ -802,7 +825,12 @@ void rx_dsp :: set_squelch(uint8_t threshold, uint8_t timeout)
   const uint16_t timeouts[] = {
     50, 100, 200, 500, 1000, 2000, 3000, 5000
   };
-  squelch_threshold = thresholds[threshold];
+  if (threshold == 0) {
+    squelch_adaptive = true;
+  } else {
+    squelch_adaptive = false;
+    squelch_threshold = thresholds[threshold - 1];
+  }
   squelch_timeout_ms = timeouts[timeout];
 }
 

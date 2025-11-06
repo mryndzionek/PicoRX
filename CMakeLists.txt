@@ -76,6 +76,7 @@ set(PICORX_SRCS
     ${CMAKE_CURRENT_LIST_DIR}/codecs/cordic.cpp
     ${CMAKE_CURRENT_LIST_DIR}/fault.c
     ${CMAKE_CURRENT_LIST_DIR}/m0FaultDispatch.c
+    ${CMAKE_CURRENT_LIST_DIR}/wavelet_denoiser.cpp
 )
 
 set(PICORX_LIBS

@@ -79,6 +79,7 @@ struct s_global_settings
   uint8_t aux_view;
   uint8_t tuning_option;
   uint8_t impulse_threshold;
+  uint8_t wavelet_threshold;
   bool    usb_stream;
   bool    enable_auto_notch;
   bool    iq_correction;
@@ -113,7 +114,7 @@ const s_settings default_settings = {
 }, {
   5,  //volume
   10, //cw_sidetone = 1000Hz
-  0,  //squelch_threshold
+  1,  //squelch_threshold
   0,  //squelch_timeout = never
   2,  //spectrum_zoom
   0,  //deemphasis
@@ -152,6 +153,7 @@ const s_settings default_settings = {
   2,  //tuning_option
   0,  //impulse blanker threshold
   0,  //usb_stream
+  0,  // wavelet_threshold
   0,  //enable_auto_notch
   0,  //iq_correction
   0,  //enable_noise_reduction

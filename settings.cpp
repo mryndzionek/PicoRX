@@ -44,6 +44,7 @@ void apply_settings_to_rx(rx & receiver, rx_settings & rx_settings, s_settings &
   rx_settings.stream_raw_iq = settings.global.usb_stream;
   rx_settings.tuning_option = settings.global.tuning_option;
   rx_settings.impulse_threshold = settings.global.impulse_threshold;
+  rx_settings.wavelet_threshold = settings.global.wavelet_threshold;
   receiver.release();
 }
 
