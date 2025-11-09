@@ -55,6 +55,7 @@ struct rx_settings
   uint8_t tuning_option;
   bool enable_external_nco;
   bool stream_raw_iq;
+  bool sd_card_save;
 };
 
 struct rx_status
@@ -114,7 +115,7 @@ class rx
   static bool audio_running;
   static void dma_handler();
   void process_block(uint16_t adc_samples[], int16_t audio[]);
-  
+
   //store busy time for performance monitoring
   uint32_t busy_time;
 

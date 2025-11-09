@@ -11,6 +11,7 @@
 #include "waterfall.h"
 #include "cat.h"
 #include "m0FaultDispatch.h"
+#include "sdcard.h"
 
 #define UI_REFRESH_HZ (10UL)
 #define UI_REFRESH_US (1000000UL / UI_REFRESH_HZ)
@@ -60,11 +61,20 @@ int main()
   receiver.set_alarm_pool(alarm_pool_create(0, 16));
   user_interface.autorestore();
 
+  bool sd_card_mounted = sdcard_init(user_interface.get_settings().global.sd_card_counter);
+  user_interface.set_sd_card_icon(sd_card_mounted);
 
   uint32_t last_ui_update = 0;
   uint32_t last_cat_update = 0;
   uint32_t last_buttons_update = 0;
   uint32_t last_waterfall_update = 0;
+
+  s_settings s = user_interface.get_settings();
+  bool sd_card_save = s.global.sd_card_save;
+  if (sd_card_save) {
+    const uint32_t c = sdcard_start_recording(s.channel.frequency, s.channel.mode);
+    user_interface.update_sdcard_counter(c);
+  }
 
   while(1)
   {
@@ -83,6 +93,16 @@ int main()
     {
       last_ui_update = time_us_32();
       user_interface.do_ui();
+      s = user_interface.get_settings();
+      if (sd_card_save != s.global.sd_card_save) {
+        sd_card_save = s.global.sd_card_save;
+        if (sd_card_save) {
+          const uint32_t c = sdcard_start_recording(s.channel.frequency, s.channel.mode);
+          user_interface.update_sdcard_counter(c);
+        } else {
+          sdcard_stop_recording();
+        }
+      }
       receiver.get_spectrum(spectrum, dB10, zoom);
       receiver.get_audio(audio);
     }
@@ -99,5 +119,10 @@ int main()
       waterfall_inst.update_spectrum(user_interface.get_settings(), settings_to_apply, status, spectrum, dB10, zoom);
     }
 
+    if (sd_card_save) {
+      if (sdcard_needs_flush()) {
+        sdcard_flush();
+      }
+    }
   }
 }

@@ -10,11 +10,18 @@
 #include "fonts.h"
 #include "settings.h"
 #include "rotary_encoder.h"
+#include "utils.h"
 
 #include <algorithm>
 
 #define WATERFALL_WIDTH (128)
 #define WATERFALL_MAX_VALUE (64)
+
+#define sdcard_icon_width (9)
+#define sdcard_icon_height (11)
+static const unsigned char sdcard_bits[] = {
+    0xfc, 0x01, 0x02, 0x01, 0x55, 0x01, 0x55, 0x01, 0x01, 0x01, 0x01,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xff, 0x00};
 
 void strip_trailing_space(const char *x, char *y)
 {
@@ -332,8 +339,8 @@ void ui::renderpage_original(void)
   //mode
   const uint8_t text_height = 14u;
   u8g2_SetFont(&u8g2, u8g2_font_9x15_tf);
-  u8g2_DrawStr(&u8g2, 0, text_height, modes[settings.channel.mode]);
-  uint16_t x = u8g2_GetStrWidth(&u8g2, modes[0]) + 2;
+  u8g2_DrawStr(&u8g2, 0, text_height, mode_to_str(settings.channel.mode));
+  uint16_t x = u8g2_GetStrWidth(&u8g2, mode_to_str(0)) + 2;
 
   //volume
   display_draw_volume(settings.global.volume, x);
@@ -341,11 +348,21 @@ void ui::renderpage_original(void)
 
   //battery
   display_draw_battery(battery_voltage, x);
+  x += 18;
+
+  if (sd_card_icon) {
+    u8g2_DrawXBM(&u8g2, x, 3, sdcard_icon_width, sdcard_icon_height,
+                 sdcard_bits);
+  }
 
   //power
-  snprintf(buff, buffer_size, "% 4ddBm", (int)power_dBm);
+  snprintf(buff, buffer_size, "% 4d ", (int)power_dBm);
   uint16_t w = u8g2_GetStrWidth(&u8g2, buff);
-  u8g2_DrawStr(&u8g2, 127-w, text_height, buff);
+  u8g2_DrawStr(&u8g2, 127 - w - 8, text_height, buff);
+
+  u8g2_SetFont(&u8g2, u8g2_font_5x7_tf);
+  w = u8g2_GetStrWidth(&u8g2, "dBm");
+  u8g2_DrawStr(&u8g2, 127 - w - 1, text_height, "dBm");
 
   //step size
   u8g2_SetFont(&u8g2, u8g2_font_7x14_tf);
@@ -537,7 +554,7 @@ void ui::draw_slim_status(uint16_t y)
   display_add_xy(4,0);
 
   //mode
-  display_print_str(modes[settings.channel.mode],1);
+  display_print_str(mode_to_str(settings.channel.mode),1);
 
   //signal strength dBm
   display_print_num("% 4ddBm", (int)power_dBm, 1, style_right);
@@ -1323,7 +1340,7 @@ bool ui::memory_recall(bool &ok)
     display_clear();
     display_print_str("Recall");
     display_print_num(" %03i ", select, 1, style_centered);
-    const char* mode_ptr = modes[settings.channel.mode];
+    const char* mode_ptr = mode_to_str(settings.channel.mode);
     display_set_xy(128-6*strlen(mode_ptr)-8, display_get_y());
     display_print_str(mode_ptr,1);
     display_print_str("\n", 1);
@@ -1511,7 +1528,7 @@ bool ui::memory_scan(bool &ok)
     display_print_str("Scanner");
     display_print_num(" %03i ", select, 1, style_centered);
 
-    const char* mode_ptr = modes[settings.channel.mode];
+    const char* mode_ptr = mode_to_str(settings.channel.mode);
     display_set_xy(128-6*strlen(mode_ptr)-8, display_get_y());
     display_print_str(mode_ptr,1);
 
@@ -1702,7 +1719,7 @@ bool ui::frequency_scan(bool &ok)
       display_print_str(p ,1 );
 
       // print mode
-      const char* mode_ptr = modes[settings.channel.mode];
+      const char* mode_ptr = mode_to_str(settings.channel.mode);
       display_set_xy(120-6*strlen(mode_ptr), display_get_y());
       display_print_str(mode_ptr);
       display_print_str("\n");
@@ -2242,7 +2259,7 @@ bool ui::main_menu(bool & ok)
                      "Impulse\nBlanker#Auto "
                      "Notch#De-\nEmphasis#Bass#Treble#IQ\nCorrection#Spectrum#"
                      "Aux\nDisplay#Band Start#Band Stop#Frequency\nStep#CW "
-                     "Tone\nFrequency#USB Stream#HW Config#",
+                     "Tone\nFrequency#USB Stream#SD card\nrecord#HW Config#",
                      &menu_selection, ok)) {
         if(ok)
         {
@@ -2353,6 +2370,9 @@ bool ui::main_menu(bool & ok)
             done = bit_entry("USB\nStream", "Audio#Raw IQ#", settings.global.usb_stream, ok);
             break;
           case 24 :
+            done = bit_entry("SD card\nrecord", "Off#On#", settings.global.sd_card_save, ok);
+            break;
+          case 25 :
             done = configuration_menu(ok);
             break;
         }
@@ -2722,6 +2742,11 @@ void ui::do_ui(void)
       apply_settings(false);
       autosave();
     }
+}
+
+void ui::set_sd_card_icon(bool en) { sd_card_icon = en; }
+void ui::update_sdcard_counter(uint32_t c) {
+  settings.global.sd_card_counter = c;
 }
 
 #define OLED_I2C_SDA_PIN (18)
