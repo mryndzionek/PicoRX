@@ -273,8 +273,9 @@ int waterfall::dBm_to_S(float power_dBm) {
   return (power_s);
 }
 
-void waterfall::update_spectrum(s_settings &ui_settings, rx_settings &settings, rx_status &status, uint8_t spectrum[], uint8_t dB10, uint8_t zoom)
+void waterfall::update(s_settings &ui_settings, rx_settings &settings, rx_status &status, uint8_t spectrum[], uint8_t dB10, uint8_t zoom)
 {
+
     if(!enabled) return;
     if(!power_state) return;
 
@@ -298,11 +299,21 @@ void waterfall::update_spectrum(s_settings &ui_settings, rx_settings &settings, 
         }
         break;
     }
+
     if(m_aux_display_state == sstv_active)
     {
       decode_sstv();
       return;
     }
+    else
+    {
+      update_spectrum(settings, status, spectrum, dB10, zoom);
+    }
+
+}
+
+void waterfall::update_spectrum(rx_settings &settings, rx_status &status, uint8_t spectrum[], uint8_t dB10, uint8_t zoom)
+{
 
     //update spectrum and waterfall display
     const uint16_t scope_fg = display->colour565(255, 255, 255);

@@ -10,13 +10,14 @@
 #include "ui.h"
 #include "waterfall.h"
 #include "cat.h"
-#include "m0FaultDispatch.h"
+#include "stack_watermark.h"
 
 #define UI_REFRESH_HZ (10UL)
 #define UI_REFRESH_US (1000000UL / UI_REFRESH_HZ)
-#define CAT_REFRESH_US (1000UL) //10ms
+#define CAT_REFRESH_US (1000UL) //1ms
 #define BUTTONS_REFRESH_US (50000UL) // 50ms <=> 20Hz
 #define WATERFALL_REFRESH_US (50000UL) // 50ms <=> 20Hz
+#define STACK_UPDATE_US (1000000UL) // 1s
 
 uint8_t spectrum[256];
 uint8_t audio[128];
@@ -36,9 +37,6 @@ void core1_main()
 
 int main()
 {
-  extern void __attribute__((used, naked)) HardFault_Handler(void);
-  exception_set_exclusive_handler(HARDFAULT_EXCEPTION, HardFault_Handler);
-
   gpio_set_function(LED, GPIO_FUNC_SIO);
   gpio_set_dir(LED, GPIO_OUT);
   gpio_put(LED, 1);
@@ -52,6 +50,7 @@ int main()
   }
 
   stdio_init_all();
+  init_stack_watermark();
   watchdog_enable(2000, true);
   multicore_launch_core1(core1_main);
 
@@ -65,6 +64,7 @@ int main()
   uint32_t last_cat_update = 0;
   uint32_t last_buttons_update = 0;
   uint32_t last_waterfall_update = 0;
+  uint32_t last_stack_update = 0;
 
   while(1)
   {
@@ -96,7 +96,15 @@ int main()
     if(time_us_32() - last_waterfall_update > WATERFALL_REFRESH_US)
     {
       last_waterfall_update = time_us_32();
-      waterfall_inst.update_spectrum(user_interface.get_settings(), settings_to_apply, status, spectrum, dB10, zoom);
+      waterfall_inst.update(user_interface.get_settings(), settings_to_apply, status, spectrum, dB10, zoom);
+    }
+
+    if(time_us_32() - last_stack_update > STACK_UPDATE_US)
+    {
+      last_stack_update = time_us_32();
+      #ifdef PRINT_STACK_USAGE
+      print_stack_usage();
+      #endif
     }
 
   }

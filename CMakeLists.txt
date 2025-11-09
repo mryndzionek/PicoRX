@@ -11,6 +11,13 @@ if(NOT DEFINED ENV{PICO_SDK_PATH})
     set(ENV{PICOTOOL_FETCH_FROM_GIT_PATH} "${CMAKE_BINARY_DIR}/picotool-build")
 endif()
 
+# Ensure GNU size tool is defined
+find_program(CMAKE_SIZE arm-none-eabi-size)
+if (NOT CMAKE_SIZE)
+    message(FATAL_ERROR "arm-none-eabi-size not found — is the ARM toolchain in your PATH?")
+endif()
+
+
 include(pico_sdk_import.cmake)
 
 project(picorx
@@ -25,8 +32,7 @@ pico_sdk_init()
 
 set(CMAKE_C_STANDARD 11)
 
-add_compile_options(-Wall -Werror -Wextra -Wshadow -Wstack-usage=2048
-                    -fdata-sections -ffunction-sections)
+add_compile_options(-Wall -Werror -Wextra -Wshadow -Wstack-usage=2048 -fdata-sections -ffunction-sections)
 add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>)
 add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>)
 
@@ -44,8 +50,6 @@ add_library(u8g2)
 target_sources(u8g2 PRIVATE ${U8G2_SRCS} ${U8G2_HDRS})
 target_compile_options(u8g2 PRIVATE -Wno-unused-function -Wno-unused-variable)
 target_include_directories(u8g2 PUBLIC ${CMAKE_CURRENT_LIST_DIR}/external/u8g2/csrc/)
-
-set_source_files_properties(m0FaultDispatch.c PROPERTIES COMPILE_FLAGS "-Wno-unused-variable -Wno-maybe-uninitialized")
 
 set(PICORX_SRCS
     ${CMAKE_CURRENT_LIST_DIR}/ssd1306.c
@@ -74,8 +78,6 @@ set(PICORX_SRCS
     ${CMAKE_CURRENT_LIST_DIR}/codecs/sstv_decoder.cpp
     ${CMAKE_CURRENT_LIST_DIR}/codecs/sstv_decoder_picorx.cpp
     ${CMAKE_CURRENT_LIST_DIR}/codecs/cordic.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/fault.c
-    ${CMAKE_CURRENT_LIST_DIR}/m0FaultDispatch.c
 )
 
 set(PICORX_LIBS
@@ -115,8 +117,9 @@ if(PICO_BOARD STREQUAL "pico")
     pico_enable_stdio_uart(picorx 0)
     target_include_directories(picorx PRIVATE ${CMAKE_CURRENT_LIST_DIR})
     target_link_libraries(picorx PRIVATE ${PICORX_LIBS})
-    target_compile_definitions(picorx PUBLIC PICO_XOSC_STARTUP_DELAY_MULTIPLIER=128)
+    target_compile_definitions(picorx PUBLIC PICO_XOSC_STARTUP_DELAY_MULTIPLIER=128 PICO_STACK_SIZE=4096)
     set_target_properties(picorx PROPERTIES SUFFIX ".elf")
+    add_custom_command(TARGET picorx POST_BUILD COMMAND ${CMAKE_SIZE} ${CMAKE_CURRENT_BINARY_DIR}/picorx.elf COMMENT "=== Memory / Code Size Report ===")
 
     #battery check utility
     add_executable(battery_check)
@@ -144,8 +147,9 @@ elseif(PICO_BOARD STREQUAL "pico2")
         pico_enable_stdio_uart(pico2rx-riscv 0)
         target_include_directories(pico2rx-riscv PRIVATE ${CMAKE_CURRENT_LIST_DIR})
         target_link_libraries(pico2rx-riscv PRIVATE ${PICORX_LIBS})
-        target_compile_definitions(pico2rx-riscv PUBLIC PICO_XOSC_STARTUP_DELAY_MULTIPLIER=128)
+        target_compile_definitions(pico2rx-riscv PUBLIC PICO_XOSC_STARTUP_DELAY_MULTIPLIER=128 PICO_STACK_SIZE=4096)
         set_target_properties(pico2rx-riscv PROPERTIES SUFFIX ".elf")
+        add_custom_command(TARGET pico2rx-riscv POST_BUILD COMMAND ${CMAKE_SIZE} ${CMAKE_CURRENT_BINARY_DIR}/pico2rx-riscv.elf COMMENT "=== Memory / Code Size Report ===")
 
     else()
 
@@ -160,8 +164,9 @@ elseif(PICO_BOARD STREQUAL "pico2")
         pico_enable_stdio_uart(pico2rx 0)
         target_include_directories(pico2rx PRIVATE ${CMAKE_CURRENT_LIST_DIR})
         target_link_libraries(pico2rx PRIVATE ${PICORX_LIBS})
-        target_compile_definitions(pico2rx PUBLIC PICO_XOSC_STARTUP_DELAY_MULTIPLIER=128)
+        target_compile_definitions(pico2rx PUBLIC PICO_XOSC_STARTUP_DELAY_MULTIPLIER=128 PICO_STACK_SIZE=4096)
         set_target_properties(pico2rx PROPERTIES SUFFIX ".elf")
+        add_custom_command(TARGET pico2rx POST_BUILD COMMAND ${CMAKE_SIZE} ${CMAKE_CURRENT_BINARY_DIR}/pico2rx.elf COMMENT "=== Memory / Code Size Report ===")
 
         #battery check utility
         add_executable(battery_check_pico2)

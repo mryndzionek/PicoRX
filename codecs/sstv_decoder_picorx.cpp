@@ -31,8 +31,8 @@ void c_sstv_decoder_picorx :: image_write_line(uint16_t line_rgb565[], uint16_t 
   }
 
   //update progress
-  char buffer[25];
-  snprintf(buffer, 25, "%10s: %ux%u", mode_string, width, y+1);
+  char buffer[27];
+  snprintf(buffer, 27, "%10s: %ux%u  ", mode_string, width, y+1);
   display->drawString(0, display_height+10, font_8x5, buffer, COLOUR_WHITE, COLOUR_BLUE);
 
 }

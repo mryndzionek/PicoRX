@@ -23,7 +23,7 @@
 void c_sstv_decoder :: sample_to_pixel(uint16_t &x, uint16_t &y, uint8_t &colour, int32_t image_sample)
 {
   //martin and scottie colour order is g-b-r, map to r-g-b
-  static const uint8_t colourmap[4] = {1, 2, 0, 4};
+  const uint8_t colourmap[4] = {1, 2, 0, 4};
 
   if( decode_mode == martin_m1 || decode_mode == martin_m2 )
   {
@@ -806,7 +806,7 @@ bool c_sstv_decoder :: decode_image_non_blocking(uint8_t timeout_s, bool slant_c
 
   if(line_complete)
   {
-    uint16_t line_rgb565[640]; //array to hold one line of image in rgb565 format
+    static uint16_t line_rgb565[640]; //array to hold one line of image in rgb565 format
     image_in_progress = true;
     if(decode_mode == pd_50 || decode_mode == pd_90 || decode_mode == pd_120 || decode_mode == pd_180)
     {
