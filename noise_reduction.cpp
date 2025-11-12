@@ -62,12 +62,15 @@ static const uint32_t adaptive_threshold_lut[] = {
 };
 
 
-void noise_reduction(int16_t i[], int16_t q[], int32_t noise_estimate[], int16_t signal_estimate[], uint16_t start, uint16_t stop, const int8_t noise_smoothing, const int8_t threshold)
+void noise_reduction(int16_t i[], int16_t q[], uint16_t mag[],
+                     int32_t noise_estimate[], int16_t signal_estimate[],
+                     uint16_t start, uint16_t stop,
+                     const int8_t noise_smoothing, const int8_t threshold)
 {
     for(uint16_t idx = start; idx <= stop; ++idx)
     {
 
-      const int32_t magnitude = rectangular_2_magnitude(i[idx], q[idx]);
+      const int32_t magnitude = mag[idx];
       int32_t signal_level = signal_estimate[idx];
       int32_t noise_level = noise_estimate[idx];
 

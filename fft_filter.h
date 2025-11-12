@@ -1,9 +1,9 @@
-//  _  ___  _   _____ _     _                 
-// / |/ _ \/ | |_   _| |__ (_)_ __   __ _ ___ 
+//  _  ___  _   _____ _     _
+// / |/ _ \/ | |_   _| |__ (_)_ __   __ _ ___
 // | | | | | |   | | | '_ \| | '_ \ / _` / __|
 // | | |_| | |   | | | | | | | | | | (_| \__ \.
 // |_|\___/|_|   |_| |_| |_|_|_| |_|\__, |___/
-//                                  |___/    
+//                                  |___/
 //
 // Copyright (c) Jonathan P Dawson 2024
 // filename: fft_filter.h
@@ -21,14 +21,15 @@
 
 struct s_filter_control
 {
-  uint16_t start_bin; 
-  uint16_t stop_bin; 
+  uint16_t start_bin;
+  uint16_t stop_bin;
   int16_t fft_bin;
   int8_t noise_smoothing;
   int8_t noise_threshold;
   uint8_t spectrum_smoothing;
-  bool lower_sideband; 
-  bool upper_sideband; 
+  uint32_t magnitude_sum;
+  bool lower_sideband;
+  bool upper_sideband;
   bool capture;
   bool enable_auto_notch;
   bool enable_noise_reduction;
