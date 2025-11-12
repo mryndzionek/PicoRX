@@ -53,6 +53,8 @@ void fft_filter::filter_block(int16_t sample_real[], int16_t sample_imag[], s_fi
   int16_t peak = 0;
   int16_t next_peak = 0;
   uint16_t peak_bin = 0;
+  uint16_t magnitudes[(new_fft_size/2u) + 1] = {0};
+  filter_control.magnitude_sum = 0;
 
   //DC and positive frequencies
   for (uint16_t i = 0; i < (new_fft_size/2u) + 1; i++) {
@@ -68,15 +70,16 @@ void fft_filter::filter_block(int16_t sample_real[], int16_t sample_imag[], s_fi
       sample_imag[i] = cic_correct(i, filter_control.fft_bin, sample_imag[i]);
 
       //capture highest and second highest peak
-      uint16_t magnitude = rectangular_2_magnitude(sample_real[i], sample_imag[i]);
-      if(magnitude > peak)
+      magnitudes[i] = rectangular_2_magnitude(sample_real[i], sample_imag[i]);
+      filter_control.magnitude_sum += magnitudes[i];
+      if(magnitudes[i] > peak)
       {
-        peak = magnitude; 
+        peak = magnitudes[i];
         peak_bin = i;
       }
-      else if(magnitude > next_peak)
+      else if(magnitudes[i] > next_peak)
       {
-        next_peak = magnitude;
+        next_peak = magnitudes[i];
       }
 
     }
@@ -87,17 +90,19 @@ void fft_filter::filter_block(int16_t sample_real[], int16_t sample_imag[], s_fi
   {
     const uint16_t start_bin = std::max((uint16_t)4, filter_control.start_bin);
     noise_reduction(
-      sample_real, 
-      sample_imag, 
-      positive_noise_estimate, 
-      positive_signal_estimate, 
-      start_bin, 
+      sample_real,
+      sample_imag,
+      magnitudes,
+      positive_noise_estimate,
+      positive_signal_estimate,
+      start_bin,
       filter_control.stop_bin,
       filter_control.noise_smoothing,
       filter_control.noise_threshold);
   }
 
   //negative frequencies
+  magnitudes[0] = magnitudes[(new_fft_size/2u)];
   for (uint16_t i = 0; i < (new_fft_size/2u)-1; i++) {
     const uint16_t bin = new_fft_size/2 - i - 1;
     const uint16_t new_idx = (new_fft_size/2u) + 1 + i;
@@ -112,15 +117,16 @@ void fft_filter::filter_block(int16_t sample_real[], int16_t sample_imag[], s_fi
       sample_imag[new_idx] = cic_correct(bin, filter_control.fft_bin, sample_imag[fft_size - (new_fft_size/2u) + i + 1]);
 
       //capture highest and second highest peak
-      uint16_t magnitude = rectangular_2_magnitude(sample_real[new_idx], sample_imag[new_idx]);
-      if(magnitude > peak)
+      magnitudes[i + 1] = rectangular_2_magnitude(sample_real[new_idx], sample_imag[new_idx]);
+      filter_control.magnitude_sum += magnitudes[i + 1];
+      if(magnitudes[i + 1] > peak)
       {
-        peak = magnitude; 
+        peak = magnitudes[i + 1];
         peak_bin = new_idx;
       }
-      else if(magnitude > next_peak)
+      else if(magnitudes[i + 1] > next_peak)
       {
-        next_peak = magnitude;
+        next_peak = magnitudes[i + 1];
       }
     }
   }
@@ -130,11 +136,12 @@ void fft_filter::filter_block(int16_t sample_real[], int16_t sample_imag[], s_fi
   {
     const uint16_t start_bin = std::max((uint16_t)2, filter_control.start_bin);
     noise_reduction(
-      &sample_real[new_fft_size/2u], 
-      &sample_imag[new_fft_size/2u], 
-      negative_noise_estimate, 
-      negative_signal_estimate, 
-      new_fft_size/2u-1-filter_control.stop_bin, 
+      &sample_real[new_fft_size/2u],
+      &sample_imag[new_fft_size/2u],
+      magnitudes,
+      negative_noise_estimate,
+      negative_signal_estimate,
+      new_fft_size/2u-1-filter_control.stop_bin,
       new_fft_size/2u-1-start_bin,
       filter_control.noise_smoothing,
       filter_control.noise_threshold);
