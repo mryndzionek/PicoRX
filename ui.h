@@ -54,7 +54,6 @@ class ui
 
   s_settings settings;
   const uint32_t timeout_lookup[8] = {0, 5000000, 10000000, 15000000, 30000000, 60000000, 120000000, 240000000};
-  const char modes[6][4]  = {" AM", "AMS", "LSB", "USB", " FM", " CW"};
   const char smeter[13][12]  = {
     "S0",          "S1|",         "S2-|",        "S3--|",
     "S4---|",      "S5----|",     "S6-----|",    "S7------|",
@@ -179,11 +178,15 @@ class ui
 
   u8g2_t u8g2;
 
+  bool sd_card_icon;
+
   public:
 
   s_settings & get_settings(){return settings;};
   void autorestore();
   void do_ui(void);
+  void set_sd_card_icon(bool en);
+  void update_sdcard_counter(uint32_t c);
   ui(rx_settings& _settings_to_apply, rx_status& _status, rx& _receiver,
      uint8_t* _spectrum, uint8_t* _audio, uint8_t& _dB10, uint8_t& _zoom,
      waterfall& _waterfall_inst);

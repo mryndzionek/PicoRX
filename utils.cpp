@@ -66,3 +66,12 @@ void initialise_luts()
     sin_table[idx] = roundf(sinf(2.0*M_PI*idx/2048.0) * scaling_factor);
   }
 }
+
+char const* mode_to_str(uint8_t m) {
+  static const char modes[6][4] = {" AM", "AMS", "LSB", "USB", " FM", " CW"};
+  if (m < 6) {
+    return modes[m];
+  } else {
+    return "???";
+  }
+}

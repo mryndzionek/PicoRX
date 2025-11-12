@@ -42,6 +42,7 @@ void apply_settings_to_rx(rx & receiver, rx_settings & rx_settings, s_settings &
   rx_settings.treble = settings.global.treble;
   rx_settings.bass = settings.global.bass;
   rx_settings.stream_raw_iq = settings.global.usb_stream;
+  rx_settings.sd_card_save = settings.global.sd_card_save;
   rx_settings.tuning_option = settings.global.tuning_option;
   rx_settings.impulse_threshold = settings.global.impulse_threshold;
   receiver.release();
@@ -77,13 +78,13 @@ void memory_store_channel(s_memory_channel memory_channel, uint16_t channel_numb
       }
     }
   }
-    
+
   //update the relevant part of the sector
   memcpy(sector_copy[channel_offset_in_sector], &memory_channel, sizeof(s_memory_channel));
 
   //write sector to flash
   const uint32_t address = (uint32_t)&(radio_memory[first_channel_in_sector]);
-  const uint32_t flash_address = address - XIP_BASE; 
+  const uint32_t flash_address = address - XIP_BASE;
 
   //!!! PICO is **very** fussy about flash erasing, there must be no code running in flash.  !!!
   //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -103,7 +104,7 @@ void memory_store_channel(s_memory_channel memory_channel, uint16_t channel_numb
   apply_settings_to_rx(receiver, rx_settings, settings, false, false); //resume rx operation
   //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   //!!! Normal operation resumed
-      
+
 }
 
 
@@ -118,8 +119,8 @@ void autosave_restore_settings(s_settings &settings)
   {
     if(autosave_memory[i][0] != 0xffffffff) //find stored settings
     {
-      latest_channel = i; 
-    } 
+      latest_channel = i;
+    }
   }
 
   if(latest_channel == 0xffff)
@@ -158,14 +159,14 @@ void autosave_store_settings(s_settings settings, rx & receiver, rx_settings & r
       empty_channel = i;
       empty_channel_found = true;
       break;
-    } 
+    }
   }
 
   //if there are no free channels, erase all the pages
   if(!empty_channel_found)
   {
     const uint32_t address = (uint32_t)&(autosave_memory[0]);
-    const uint32_t flash_address = address - XIP_BASE; 
+    const uint32_t flash_address = address - XIP_BASE;
     //!!! PICO is **very** fussy about flash erasing, there must be no code running in flash.  !!!
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     apply_settings_to_rx(receiver, rx_settings, settings, true, false); //suspend rx to disable all DMA transfers
@@ -202,7 +203,7 @@ void autosave_store_settings(s_settings settings, rx & receiver, rx_settings & r
       }
     }
   }
-    
+
   //modify the selected channel
   for(uint8_t i=0; i<autosave_chan_size; i++)
   {
@@ -211,7 +212,7 @@ void autosave_store_settings(s_settings settings, rx & receiver, rx_settings & r
 
   //write sector to flash
   const uint32_t address = (uint32_t)&(autosave_memory[first_channel_in_sector]);
-  const uint32_t flash_address = address - XIP_BASE; 
+  const uint32_t flash_address = address - XIP_BASE;
 
   //!!! PICO is **very** fussy about flash erasing, there must be no code running in flash.  !!!
   //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

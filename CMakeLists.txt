@@ -32,7 +32,8 @@ pico_sdk_init()
 
 set(CMAKE_C_STANDARD 11)
 
-add_compile_options(-Wall -Werror -Wextra -Wshadow -Wstack-usage=2048 -fdata-sections -ffunction-sections)
+add_compile_options(-Wall -Werror -Wextra -Wshadow -Wstack-usage=2048
+                    -fdata-sections -ffunction-sections -Wno-missing-field-initializers)
 add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>)
 add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>)
 
@@ -50,6 +51,8 @@ add_library(u8g2)
 target_sources(u8g2 PRIVATE ${U8G2_SRCS} ${U8G2_HDRS})
 target_compile_options(u8g2 PRIVATE -Wno-unused-function -Wno-unused-variable)
 target_include_directories(u8g2 PUBLIC ${CMAKE_CURRENT_LIST_DIR}/external/u8g2/csrc/)
+
+include(external/no-OS-FatFS-SD-SDIO-SPI-RPi-Pico/src/CMakeLists.txt)
 
 set(PICORX_SRCS
     ${CMAKE_CURRENT_LIST_DIR}/ssd1306.c
@@ -74,6 +77,7 @@ set(PICORX_SRCS
     ${CMAKE_CURRENT_LIST_DIR}/pwm_audio_sink.cpp
     ${CMAKE_CURRENT_LIST_DIR}/usb_descriptors.c
     ${CMAKE_CURRENT_LIST_DIR}/usb_audio_device.c
+    ${CMAKE_CURRENT_LIST_DIR}/sdcard.cpp
     ${CMAKE_CURRENT_LIST_DIR}/ring_buffer_lib.c
     ${CMAKE_CURRENT_LIST_DIR}/codecs/sstv_decoder.cpp
     ${CMAKE_CURRENT_LIST_DIR}/codecs/sstv_decoder_picorx.cpp
@@ -95,6 +99,7 @@ set(PICORX_LIBS
     tinyusb_device
     tinyusb_board
     u8g2
+    no-OS-FatFS-SD-SDIO-SPI-RPi-Pico
 )
 
 if(BUTTON_ENCODER)
@@ -111,10 +116,10 @@ if(PICO_BOARD STREQUAL "pico")
     add_executable(picorx ${PICORX_SRCS})
     target_compile_features(picorx PUBLIC c_std_11)
     pico_generate_pio_header(picorx ${CMAKE_CURRENT_LIST_DIR}/nco.pio)
-    pico_generate_pio_header(picorx ${CMAKE_CURRENT_LIST_DIR}/quadrature_encoder.pio)
     pico_add_extra_outputs(picorx)
     pico_enable_stdio_usb(picorx 1)
     pico_enable_stdio_uart(picorx 0)
+
     target_include_directories(picorx PRIVATE ${CMAKE_CURRENT_LIST_DIR})
     target_link_libraries(picorx PRIVATE ${PICORX_LIBS})
     target_compile_definitions(picorx PUBLIC PICO_XOSC_STARTUP_DELAY_MULTIPLIER=128 PICO_STACK_SIZE=4096)
@@ -140,7 +145,6 @@ elseif(PICO_BOARD STREQUAL "pico2")
         add_executable(pico2rx-riscv ${PICORX_SRCS})
         target_compile_features(pico2rx-riscv PUBLIC c_std_11)
         pico_generate_pio_header(pico2rx-riscv ${CMAKE_CURRENT_LIST_DIR}/nco.pio)
-        pico_generate_pio_header(pico2rx-riscv ${CMAKE_CURRENT_LIST_DIR}/quadrature_encoder.pio)
         pico_add_extra_outputs(pico2rx-riscv)
         # enable usb output, disable uart output
         pico_enable_stdio_usb(pico2rx-riscv 1)
@@ -158,7 +162,6 @@ elseif(PICO_BOARD STREQUAL "pico2")
         add_executable(pico2rx ${PICORX_SRCS})
         target_compile_features(pico2rx PUBLIC c_std_11)
         pico_generate_pio_header(pico2rx ${CMAKE_CURRENT_LIST_DIR}/nco.pio)
-        pico_generate_pio_header(pico2rx ${CMAKE_CURRENT_LIST_DIR}/quadrature_encoder.pio)
         pico_add_extra_outputs(pico2rx)
         pico_enable_stdio_usb(pico2rx 1)
         pico_enable_stdio_uart(pico2rx 0)
