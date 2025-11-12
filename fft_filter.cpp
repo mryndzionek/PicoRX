@@ -14,11 +14,13 @@
 #include <cmath>
 #include <cstdio>
 #include <algorithm>
+#include <iterator>
 
 #include "fft_filter.h"
 #include "fft.h"
 #include "utils.h"
 #include "noise_reduction.h"
+#include "rnn_denoiser.h"
 #include "cic_corrections.h"
 #include "fft.h"
 #include "utils.h"
@@ -63,6 +65,7 @@ void fft_filter::filter_block(int16_t sample_real[], int16_t sample_imag[], s_fi
     {
       sample_real[i] = 0;
       sample_imag[i] = 0;
+      magnitudes[i + 1] = 20; // floor for RNN denoiser
     }
     else
     {
@@ -101,6 +104,16 @@ void fft_filter::filter_block(int16_t sample_real[], int16_t sample_imag[], s_fi
       filter_control.noise_threshold);
   }
 
+  if (filter_control.nn_denoiser && filter_control.upper_sideband &&
+      (!filter_control.lower_sideband)) {
+    rnn_num_t g[new_fft_size / 2u + 1];
+    rnn_denoiser_denoise(magnitudes, g);
+    for (uint16_t i = 0; i < (new_fft_size / 2u); i++) {
+      sample_real[i] *= g[i];
+      sample_imag[i] *= g[i];
+    }
+  }
+
   //negative frequencies
   magnitudes[0] = magnitudes[(new_fft_size/2u)];
   for (uint16_t i = 0; i < (new_fft_size/2u)-1; i++) {
@@ -110,6 +123,7 @@ void fft_filter::filter_block(int16_t sample_real[], int16_t sample_imag[], s_fi
     {
       sample_real[new_idx] = 0;
       sample_imag[new_idx] = 0;
+      magnitudes[i + 1] = 20; // floor for RNN denoiser
     }
     else
     {
@@ -145,6 +159,18 @@ void fft_filter::filter_block(int16_t sample_real[], int16_t sample_imag[], s_fi
       new_fft_size/2u-1-start_bin,
       filter_control.noise_smoothing,
       filter_control.noise_threshold);
+  }
+
+  if (filter_control.nn_denoiser && filter_control.lower_sideband &&
+      (!filter_control.upper_sideband)) {
+    rnn_num_t g[new_fft_size / 2u + 1];
+    std::reverse(std::begin(magnitudes), std::end(magnitudes));
+    rnn_denoiser_denoise(magnitudes, g);
+    std::reverse(std::begin(g), std::end(g));
+    for (uint16_t i = 0; i < (new_fft_size / 2u); i++) {
+      sample_real[(new_fft_size/2u) + i] *= g[i];
+      sample_imag[(new_fft_size/2u) + i] *= g[i];
+    }
   }
 
   if(filter_control.enable_auto_notch)

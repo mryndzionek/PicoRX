@@ -56,6 +56,7 @@ struct rx_settings
   bool enable_external_nco;
   bool stream_raw_iq;
   bool sd_card_save;
+  bool nn_denoiser;
 };
 
 struct rx_status
