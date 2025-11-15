@@ -33,6 +33,7 @@ struct s_filter_control
   bool capture;
   bool enable_auto_notch;
   bool enable_noise_reduction;
+  bool nn_denoiser;
 };
 
 class fft_filter

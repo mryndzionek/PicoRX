@@ -63,6 +63,7 @@ set(PICORX_SRCS
     ${CMAKE_CURRENT_LIST_DIR}/fft.cpp
     ${CMAKE_CURRENT_LIST_DIR}/fft_filter.cpp
     ${CMAKE_CURRENT_LIST_DIR}/noise_reduction.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/rnn_denoiser.cpp
     ${CMAKE_CURRENT_LIST_DIR}/cic_corrections.cpp
     ${CMAKE_CURRENT_LIST_DIR}/ui.cpp
     ${CMAKE_CURRENT_LIST_DIR}/settings.cpp
