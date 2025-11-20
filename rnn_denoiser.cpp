@@ -44,12 +44,12 @@ const float FILTERBANK_MAT[MEL_BINS][FB_LEN] = {
 };
 
 const float MEAN_VEC[MEL_BINS] = {
-    -2.05466533e+00, -2.04579163e+00, -2.16477370e+00, -2.29491639e+00,
-    -2.33922887e+00, -2.34575486e+00, -2.38508081e+00, -2.35208869e+00};
+    -1.93904531e+00, -1.92972410e+00, -2.03262258e+00, -2.13708639e+00,
+    -2.17231059e+00, -2.17845035e+00, -2.21253324e+00, -2.18855953e+00};
 
-const float STD_VEC[MEL_BINS] = {6.08707607e-01, 6.32388175e-01, 6.04813159e-01,
-                                 5.84282279e-01, 5.46662986e-01, 5.24558783e-01,
-                                 4.79360253e-01, 4.71634150e-01};
+const float STD_VEC[MEL_BINS] = {4.98894513e-01, 5.22001207e-01, 4.98394430e-01,
+                                 4.78088230e-01, 4.36300784e-01, 4.17565525e-01,
+                                 3.75371695e-01, 3.68884742e-01};
 
 const uint8_t MEL_IDX[MEL_BINS] = {0, 3, 5, 8, 10, 14, 19, 26};
 
@@ -114,7 +114,7 @@ static uint32_t avg(uint16_t x[RNND_NFFT]) {
     m += x[i];
   }
   m /= RNND_NFFT;
-  avg += m - (avg / 1024);
+  avg += m - (avg / 512);
 
   return avg;
 }
@@ -139,11 +139,18 @@ void rnn_denoiser_denoise(uint16_t x[RNND_NFFT], rnn_num_t g[RNND_NFFT]) {
 
   memset(g, 0, RNND_NFFT * sizeof(rnn_num_t));
 
+  float g_sum = 0.0f;
   for (uint16_t i = 0; i < MEL_BINS; i++) {
     input[i] = (input[i] + 1) / 2;
+    g_sum += input[i];
   }
 
-  // interpolate
+  // essentially a voice activity threshold
+  if (g_sum < 1.0f) {
+    return;
+  }
+
+  // interpolate gains
   int16_t x1 = MEL_IDX[0];
   rnn_num_t y1 = input[0];
   uint16_t k = 0;
