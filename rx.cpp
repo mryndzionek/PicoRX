@@ -280,6 +280,8 @@ void rx::apply_settings()
       //apply mode
       rx_dsp_inst.set_mode(settings_to_apply.mode, settings_to_apply.bandwidth);
 
+      //apply nn_denoiser
+      rx_dsp_inst.set_nn_denoiser(settings_to_apply.nn_denoiser);
 
       //apply volume
       static const int16_t gain[] = {

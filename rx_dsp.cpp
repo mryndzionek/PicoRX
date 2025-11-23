@@ -650,6 +650,11 @@ void rx_dsp :: set_auto_notch(bool enable_auto_notch)
   filter_control.enable_auto_notch = enable_auto_notch;
 }
 
+void rx_dsp :: set_nn_denoiser(bool enable)
+{
+  filter_control.nn_denoiser = enable;
+}
+
 void rx_dsp :: set_spectrum_smoothing(uint8_t spectrum_smoothing)
 {
   filter_control.spectrum_smoothing = spectrum_smoothing;
