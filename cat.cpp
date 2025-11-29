@@ -76,7 +76,7 @@ void process_cat_control(rx_settings & settings_to_apply, rx_status & status, rx
               printf("?;");
             }
         }
-    
+
     } else if (strncmp(cmd, "FB", 2) == 0) {
 
         // Handle mode set/get commands
@@ -333,12 +333,12 @@ void process_cat_control(rx_settings & settings_to_apply, rx_status & status, rx
           for(uint8_t word_idx=0; word_idx<16; ++word_idx)
           {
             char word_string[9];
-            memcpy(word_string, &cmd[(word_idx * 8) + 6], 8); cmd[8] = 0;
+            memcpy(word_string, &cmd[(word_idx * 8) + 6], 8); word_string[8] = 0;
             words[word_idx] = strtoul(word_string, NULL, 16);
           }
 
           s_memory_channel memory_channel;
-          memcpy(&memory_channel, words, sizeof(memory_channel)); 
+          memcpy(&memory_channel, words, sizeof(memory_channel));
           memory_store_channel(memory_channel, channel_number, settings, receiver, settings_to_apply);
           printf("ZUP%03lx;", channel_number);
 
@@ -354,7 +354,7 @@ void process_cat_control(rx_settings & settings_to_apply, rx_status & status, rx
           printf("ZDN%03lx", channel_number);
           s_memory_channel memory_channel = get_channel(channel_number);
           uint32_t words[16];
-          memcpy(words, &memory_channel, sizeof(memory_channel)); 
+          memcpy(words, &memory_channel, sizeof(memory_channel));
           for(uint8_t word_idx=0; word_idx<16; ++word_idx)
           {
             printf("%08lx", words[word_idx]);
