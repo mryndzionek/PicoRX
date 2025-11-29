@@ -333,7 +333,7 @@ void process_cat_control(rx_settings & settings_to_apply, rx_status & status, rx
           for(uint8_t word_idx=0; word_idx<16; ++word_idx)
           {
             char word_string[9];
-            memcpy(word_string, &cmd[(word_idx * 8) + 6], 8); cmd[8] = 0;
+            memcpy(word_string, &cmd[(word_idx * 8) + 6], 8); word_string[8] = 0;
             words[word_idx] = strtoul(word_string, NULL, 16);
           }
 
