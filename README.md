@@ -1,3 +1,21 @@
+### Fork to highlight my contributions:
+
+ - USB audio and raw IQ streaming
+ - SD card (SDIO) recording
+ - u8g2 library integration
+ - spectrum hold
+ - wave/scope display
+ - dithered waterfall on OLED display
+ - Synchronous AM demodulator based on 3rd order PLL
+ - CIC decimator attenuation improvement + other adjustments
+ - IQ imbalance correction
+ - De-emphasis filter + treble and bass filters
+ - impulse noise filter
+ - wavelet-based audio denoiser
+ - RNN-based audio denoiser
+ - Adaptive spectral subtraction
+
+
 Pi Pico Rx - A crystal radio for the digital age?
 =================================
 
