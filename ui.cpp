@@ -3,6 +3,7 @@
 #include <math.h>
 
 #include "pico/multicore.h"
+#include "pico/unique_id.h"
 #include "ui.h"
 #include "fft_filter.h"
 #include <hardware/flash.h>
@@ -520,6 +521,57 @@ void ui::renderpage_status(void)
   //usb buffer
   y += 10;
   snprintf(buff, buffer_size, "Freq offset: %4.0fHz", tuning_offset_Hz);
+  u8g2_DrawStr(&u8g2, 0, y, buff);
+
+  display_show();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// General info page
+////////////////////////////////////////////////////////////////////////////////
+void ui::renderpage_info(void)
+{
+  display_clear();
+  draw_slim_status(0);
+
+  u8g2_SetDrawColor(&u8g2, 1);
+  u8g2_SetFont(&u8g2, u8g2_font_6x10_tf);
+  u8g2_DrawHLine(&u8g2, 0, 8, 128);
+
+  const uint8_t buffer_size = 32;
+  char buff [buffer_size];
+
+  uint16_t y = 8; //draw from left
+  //board UID
+  y += 10;
+  char uid[2 * PICO_UNIQUE_BOARD_ID_SIZE_BYTES + 1];
+  pico_get_unique_board_id_string(uid, 2 * PICO_UNIQUE_BOARD_ID_SIZE_BYTES + 1);
+  snprintf(buff, buffer_size, "Board UID   :");
+  u8g2_DrawStr(&u8g2, 0, y, buff);
+  y += 10;
+  snprintf(buff, buffer_size, "    %s", uid);
+  u8g2_DrawStr(&u8g2, 0, y, buff);
+
+  //chip version
+  y += 10;
+  uint8_t v = rp2040_chip_version();
+  if ((v == 1) || (v == 2)) {
+    v--;
+  } else {
+    v = 2;
+  }
+  const char* const chipv_str[] = {"B0/B1", "B2", "???"};
+  snprintf(buff, buffer_size, "Chip version: %s", chipv_str[v]);
+  u8g2_DrawStr(&u8g2, 0, y, buff);
+
+  // ROM version
+  y += 10;
+  v = rp2040_rom_version() - 1;
+  const char* const romv_str[] = {"B0", "B1", "B2", "???"};
+  if (v > 2) {
+    v = 3;
+  }
+  snprintf(buff, buffer_size, "ROM version : %s", romv_str[v]);
   u8g2_DrawStr(&u8g2, 0, y, buff);
 
   display_show();
@@ -2567,7 +2619,7 @@ void ui::do_ui(void)
     bool update_settings = false;
     enum e_ui_state {splash, idle, menu, recall, sleep, memory_scanner, frequency_scanner};
     static e_ui_state ui_state = splash;
-    const uint8_t num_display_options = 8;
+    const uint8_t num_display_options = 9;
     static bool view_changed = false;
 
     if(ui_state != idle) view_changed = true;
@@ -2667,8 +2719,9 @@ void ui::do_ui(void)
         case 3: renderpage_waterfall(view_changed);break;
         case 4: renderpage_oscilloscope();break;
         case 5: renderpage_status();break;
-        case 6: renderpage_smeter(view_changed); break;
-        case 7: renderpage_fun(view_changed);break;
+        case 6: renderpage_info();break;
+        case 7: renderpage_smeter(view_changed); break;
+        case 8: renderpage_fun(view_changed);break;
       }
       view_changed = false;
     }
