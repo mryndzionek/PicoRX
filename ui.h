@@ -115,6 +115,7 @@ class ui
   void renderpage_combinedspectrum(bool view_changed);
   void renderpage_waterfall(bool view_changed);
   void renderpage_status(void);
+  void renderpage_info(void);
   void renderpage_fun(bool view_changed);
   void renderpage_smeter(bool view_changed);
 
